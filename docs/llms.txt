@@ -26,7 +26,7 @@ termsuji-local is a fork of the original [termsuji](https://github.com/lvank/ter
 ## Installation
 
 Requires GnuGo:
-- macOS: `brew install gnugo`
+- macOS: `brew install gnu-go`
 - Ubuntu/Debian: `sudo apt install gnugo`
 - Arch: `sudo pacman -S gnugo`
 

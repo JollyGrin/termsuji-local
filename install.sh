@@ -63,4 +63,16 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     echo ""
 fi
 
+# Check for GnuGo
+if ! command -v gnugo &> /dev/null; then
+    echo "WARNING: GnuGo is not installed (required to play)"
+    echo ""
+    if [ "$OS" = "darwin" ]; then
+        echo "  Install with: brew install gnu-go"
+    else
+        echo "  Install with: sudo apt install gnugo"
+    fi
+    echo ""
+fi
+
 echo "Run 'termsuji-local' to start playing!"

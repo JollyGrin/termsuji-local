@@ -81,7 +81,7 @@ func main() {
 	if err := checkGnuGo(); err != nil {
 		fmt.Println("Error: GnuGo not found.")
 		fmt.Println("Please install GnuGo:")
-		fmt.Println("  macOS:  brew install gnugo")
+		fmt.Println("  macOS:  brew install gnu-go")
 		fmt.Println("  Ubuntu: sudo apt install gnugo")
 		fmt.Println("  Fedora: sudo dnf install gnugo")
 		return

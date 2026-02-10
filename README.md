@@ -26,7 +26,7 @@ https://github.com/user-attachments/assets/7bee8c44-5521-484b-b3cc-4ed2236fe9bd
 
 **macOS** (via Homebrew):
 ```bash
-brew install gnugo
+brew install gnu-go
 ```
 
 **Linux (Ubuntu/Debian)**:
