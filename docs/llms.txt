@@ -1,6 +1,6 @@
 # termsuji-local
 
-> A terminal-based Go (Baduk/Weiqi) game client for playing against GnuGo AI offline. Built with Go, featuring a beautiful TUI with multiple themes, configurable board sizes, and adjustable difficulty levels.
+> A terminal-based Go (Baduk/Weiqi) game client for playing against GnuGo AI offline. Built with Go, featuring a beautiful TUI with customizable board color, configurable board sizes, and adjustable difficulty levels.
 
 termsuji-local is a fork of the original [termsuji](https://github.com/lvank/termsuji) project. While the original connects to online-go.com for multiplayer games, termsuji-local replaces the backend with a subprocess-based interface to GnuGo, allowing completely offline play.
 
@@ -8,7 +8,7 @@ termsuji-local is a fork of the original [termsuji](https://github.com/lvank/ter
 
 - Beautiful terminal-based user interface using tview
 - Play Go against GnuGo AI completely offline
-- Multiple visual themes: Default, Vaporwave, Unicode, Catdog, Hongoku
+- Customizable board color
 - Configurable board sizes: 9x9, 13x13, 19x19
 - 10 difficulty levels for GnuGo engine
 - Choose to play as Black or White
@@ -38,7 +38,6 @@ Install termsuji-local:
 - Arrow keys: Move cursor
 - Enter: Place stone
 - P: Pass turn
-- T: Change theme
 - Q: Quit
 
 ## What is Go?

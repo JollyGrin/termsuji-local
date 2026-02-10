@@ -14,7 +14,7 @@ https://github.com/user-attachments/assets/7bee8c44-5521-484b-b3cc-4ed2236fe9bd
 - Configurable board sizes (9x9, 13x13, 19x19)
 - Adjustable engine difficulty (levels 1-10)
 - Choose your color (Black/White)
-- Multiple visual themes (default, vaporwave, unicode, catdog, hongoku)
+- Customizable board color
 
 ## Requirements
 
@@ -96,7 +96,6 @@ You'll be presented with a game setup screen where you can configure:
 | Arrow keys | Move cursor |
 | Enter | Play move at cursor |
 | p | Pass turn |
-| t | Change theme |
 | q | Quit (or deselect cursor) |
 
 ## Configuration
@@ -114,14 +113,6 @@ Configuration is stored at `~/.config/termsuji-local/config.json`:
   }
 }
 ```
-
-## Themes
-
-- **default** - Classic board with terminal colors
-- **vaporwave** - Magenta/cyan aesthetic
-- **unicode** - Emoji stones with Unicode board
-- **catdog** - Cat vs dog emoji theme
-- **hongoku** - Japanese kanji theme
 
 ## Credits
 
