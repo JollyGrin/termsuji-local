@@ -126,7 +126,7 @@ func RebuildNormalLayout(gameFrame *tview.Flex, board *GoBoardUI, hint *tview.Te
 }
 
 // BuildFocusLayout builds the focus mode layout with just the centered board.
-func BuildFocusLayout(gameFrame *tview.Flex, board *GoBoardUI, hint *tview.TextView) {
+func BuildFocusLayout(gameFrame *tview.Flex, board *GoBoardUI) {
 	gameFrame.Clear()
 
 	// Calculate board dimensions
@@ -148,5 +148,4 @@ func BuildFocusLayout(gameFrame *tview.Flex, board *GoBoardUI, hint *tview.TextV
 
 	gameFrame.AddItem(centerRow, boardHeight, 0, true) // center row (fixed height)
 	gameFrame.AddItem(nil, 0, 1, false)                // bottom spacer
-	gameFrame.AddItem(hint, 1, 0, false)               // minimal hint at bottom
 }

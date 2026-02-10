@@ -95,6 +95,19 @@ func main() {
 	rootPage = tview.NewPages()
 	rootPage.SetBorder(true).SetTitle(" ⬡ termsuji ")
 
+	// Draw "f to toggle" on the bottom border when in focus mode
+	rootPage.SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
+		if gameBoard != nil && gameBoard.IsFocusMode() {
+			title := " f to toggle "
+			titleX := x + (width-len(title))/2
+			titleY := y + height - 1 // bottom border line
+			for i, r := range title {
+				screen.SetContent(titleX+i, titleY, r, nil, tcell.StyleDefault)
+			}
+		}
+		return x, y, width, height
+	})
+
 	// Game view setup
 	gameHint = tview.NewTextView()
 	gameHint.SetBorder(true)
@@ -146,7 +159,7 @@ func main() {
 				gameBoard.Pass()
 			case 'f':
 				if gameBoard.ToggleFocusMode() {
-					ui.BuildFocusLayout(gameFrame, gameBoard, gameHint)
+					ui.BuildFocusLayout(gameFrame, gameBoard)
 				} else {
 					ui.RebuildNormalLayout(gameFrame, gameBoard, gameHint)
 				}
@@ -198,7 +211,7 @@ func main() {
 		// Enter focus mode if requested
 		if *flagFocus {
 			gameBoard.SetFocusMode(true)
-			ui.BuildFocusLayout(gameFrame, gameBoard, gameHint)
+			ui.BuildFocusLayout(gameFrame, gameBoard)
 		}
 	}
 

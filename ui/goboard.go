@@ -286,9 +286,9 @@ func (g *GoBoardUI) refreshHint() {
 		g.infoPanel.SetBoardState(g.BoardState)
 	}
 
-	// Focus mode shows minimal hint
+	// Focus mode: hide hint pane, bottom title drawn on border via rootPage.SetDrawFunc
 	if g.focusMode {
-		g.hint.SetText("  f to toggle")
+		g.hint.SetText("")
 		return
 	}
 
