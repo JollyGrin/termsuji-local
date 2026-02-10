@@ -92,18 +92,18 @@ func main() {
 
 	app = tview.NewApplication()
 	rootPage = tview.NewPages()
-	rootPage.SetBorder(true).SetTitle(" termsuji-local ")
+	rootPage.SetBorder(true).SetTitle(" ⬡ termsuji ")
 
 	// Game view setup
-	gameFrame = tview.NewFlex().SetDirection(tview.FlexRow)
 	gameHint = tview.NewTextView()
 	gameHint.SetBorder(true)
+	gameHint.SetBorderPadding(0, 0, 1, 1)
+	gameHint.SetTitle(" Status ")
+	gameHint.SetTitleAlign(tview.AlignLeft)
 	gameBoard = ui.NewGoBoard(app, cfg, gameHint)
 
-	// Initial layout: board on top, hint at bottom
-	gameFrame.
-		AddItem(gameBoard.Box, 0, 1, true).
-		AddItem(gameHint, 7, 0, false)
+	// Create game layout with centered board and side panel
+	gameFrame = ui.CreateGameLayout(gameBoard, gameHint)
 
 	// Game board input handling
 	gameBoard.Box.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -133,6 +133,14 @@ func main() {
 			gameBoard.PlayMove(selTile.X, selTile.Y)
 		case tcell.KeyRune:
 			switch event.Rune() {
+			case 'h':
+				gameBoard.MoveSelection(-1, 0)
+			case 'j':
+				gameBoard.MoveSelection(0, 1)
+			case 'k':
+				gameBoard.MoveSelection(0, -1)
+			case 'l':
+				gameBoard.MoveSelection(1, 0)
 			case 'p':
 				gameBoard.Pass()
 			}
@@ -192,11 +200,8 @@ func startGame(gameCfg engine.GameConfig) {
 	// Use configured GnuGo path
 	gameCfg.EnginePath = cfg.GnuGo.Path
 
-	// Update game board flex layout
-	gameFrame.Clear()
-	gameFrame.
-		AddItem(gameBoard.Box, 0, 1, true).
-		AddItem(gameHint, 7, 0, false)
+	// Set komi on info panel
+	gameBoard.SetKomi(gameCfg.Komi)
 
 	// Start the game
 	eng := gtp.NewGTPEngine(gameCfg)

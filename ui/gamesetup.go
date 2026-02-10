@@ -37,9 +37,9 @@ func NewGameSetup(onStart func(engine.GameConfig), onCancel func(), onColors fun
 		komi:        6.5,
 	}
 
-	boardSizes := []string{"9x9", "13x13", "19x19"}
-	colors := []string{"Black (play first)", "White (play second)"}
-	levels := []string{"1 (easiest)", "2", "3", "4", "5", "6", "7", "8", "9", "10 (hardest)"}
+	boardSizes := []string{"9×9  Beginner", "13×13  Intermediate", "19×19  Standard"}
+	colors := []string{"● Black  (play first)", "○ White  (play second)"}
+	levels := []string{"1 · Novice", "2", "3", "4", "5 · Moderate", "6", "7", "8", "9", "10 · Expert"}
 
 	form := tview.NewForm()
 
@@ -71,7 +71,7 @@ func NewGameSetup(onStart func(engine.GameConfig), onCancel func(), onColors fun
 		}
 	})
 
-	form.AddButton("Start Game", func() {
+	form.AddButton(" Play ", func() {
 		cfg := engine.GameConfig{
 			BoardSize:   setup.boardSize,
 			Komi:        setup.komi,
@@ -82,32 +82,37 @@ func NewGameSetup(onStart func(engine.GameConfig), onCancel func(), onColors fun
 		onStart(cfg)
 	})
 
-	form.AddButton("Board Color", func() {
+	form.AddButton(" Colors ", func() {
 		if onColors != nil {
 			onColors()
 		}
 	})
 
-	form.AddButton("Quit", func() {
+	form.AddButton(" Quit ", func() {
 		onCancel()
 	})
 
 	form.SetBorder(true)
 	form.SetTitle(" New Game ")
 	form.SetTitleAlign(tview.AlignCenter)
-	form.SetButtonBackgroundColor(tcell.ColorDarkCyan)
+	form.SetButtonBackgroundColor(tcell.ColorDarkSlateGray)
 	form.SetButtonTextColor(tcell.ColorWhite)
+	form.SetFieldBackgroundColor(tcell.ColorDarkSlateGray)
+	form.SetLabelColor(tcell.ColorLightGray)
 
-	// Create help text
+	// Create help text with refined styling
 	helpText := tview.NewTextView().
-		SetText("Tab/Shift+Tab: navigate fields  |  Arrow keys: change dropdown  |  Enter: confirm").
+		SetText("Tab · navigate    ↑↓ · select    ⏎ · confirm").
 		SetTextAlign(tview.AlignCenter)
-	helpText.SetTextColor(tcell.ColorGray)
+	helpText.SetTextColor(tcell.ColorDimGray)
 
-	// Create flex layout with form and help text
-	flex := tview.NewFlex().SetDirection(tview.FlexRow).
+	// Create inner flex layout with form and help text
+	innerFlex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(form, 0, 1, true).
 		AddItem(helpText, 1, 0, false)
+
+	// Center the form horizontally
+	flex := CreateCenteredForm(innerFlex, 50)
 
 	setup.form = form
 	setup.flex = flex

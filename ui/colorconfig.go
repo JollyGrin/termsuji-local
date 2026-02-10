@@ -129,7 +129,7 @@ func NewColorConfig(cfg *config.Config, onDone func()) *ColorConfigUI {
 	// Create preview box
 	cc.preview = tview.NewBox()
 	cc.preview.SetBorder(true)
-	cc.preview.SetTitle(" Preview ")
+	cc.preview.SetTitle(" Board Preview ")
 	cc.preview.SetDrawFunc(cc.drawPreview)
 
 	// Layout: list on left, preview on right

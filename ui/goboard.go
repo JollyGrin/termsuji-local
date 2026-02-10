@@ -24,6 +24,7 @@ type GoBoardUI struct {
 	app          *tview.Application
 	eng          engine.GameEngine
 	styles       []tcell.Color
+	infoPanel    *GameInfoPanel
 }
 
 func (g *GoBoardUI) SelectedTile() *types.BoardPos {
@@ -239,39 +240,64 @@ func (g *GoBoardUI) Close() {
 
 func (g *GoBoardUI) SetConfig(c *config.Config) {
 	g.styles = []tcell.Color{
-		tcell.PaletteColor(c.Theme.Colors.BoardColor),      // 0
-		tcell.PaletteColor(c.Theme.Colors.BlackColor),      // 1
-		tcell.PaletteColor(c.Theme.Colors.WhiteColor),      // 2
-		tcell.PaletteColor(c.Theme.Colors.BoardColorAlt),   // 3
-		tcell.PaletteColor(c.Theme.Colors.BlackColorAlt),   // 4
-		tcell.PaletteColor(c.Theme.Colors.WhiteColorAlt),   // 5
-		tcell.PaletteColor(c.Theme.Colors.CursorColorFG),   // 6
+		tcell.PaletteColor(c.Theme.Colors.BoardColor),        // 0
+		tcell.PaletteColor(c.Theme.Colors.BlackColor),        // 1
+		tcell.PaletteColor(c.Theme.Colors.WhiteColor),        // 2
+		tcell.PaletteColor(c.Theme.Colors.BoardColorAlt),     // 3
+		tcell.PaletteColor(c.Theme.Colors.BlackColorAlt),     // 4
+		tcell.PaletteColor(c.Theme.Colors.WhiteColorAlt),     // 5
+		tcell.PaletteColor(c.Theme.Colors.CursorColorFG),     // 6
 		tcell.PaletteColor(c.Theme.Colors.LastPlayedColorBG), // 7
-		tcell.PaletteColor(c.Theme.Colors.CursorColorBG),   // 8
-		tcell.PaletteColor(c.Theme.Colors.LineColor),       // 9
+		tcell.PaletteColor(c.Theme.Colors.CursorColorBG),     // 8
+		tcell.PaletteColor(c.Theme.Colors.LineColor),         // 9
 	}
 	g.cfg = c
 }
 
+// SetKomi sets the komi value on the info panel.
+func (g *GoBoardUI) SetKomi(komi float64) {
+	if g.infoPanel != nil {
+		g.infoPanel.SetKomi(komi)
+	}
+}
+
 func (g *GoBoardUI) refreshHint() {
-	var passHint, turnHint string
+	// Update info panel if available
+	if g.infoPanel != nil {
+		g.infoPanel.SetBoardState(g.BoardState)
+	}
+
+	var statusLine, turnLine, controlsLine string
+
 	if g.finished {
-		turnHint = fmt.Sprintf("Game Over\nResult: %s", g.BoardState.Outcome)
+		// Game over state
+		statusLine = "───────── Game Complete ─────────\n\n"
+		turnLine = fmt.Sprintf("  Result: %s\n", g.BoardState.Outcome)
+		controlsLine = "\n  q · return to menu"
 	} else {
+		// Active game state
 		if g.lastTurnPass {
-			passHint = "Opponent passed.\n\n"
+			statusLine = "  ○ Opponent passed\n\n"
 		}
+
 		if g.eng != nil && g.eng.IsMyTurn() {
+			stone := "●"
 			color := "Black"
 			if g.eng.GetPlayerColor() == 2 {
+				stone = "○"
 				color = "White"
 			}
-			turnHint = fmt.Sprintf("Your turn (%s)", color)
+			turnLine = fmt.Sprintf("  %s Your move (%s)\n", stone, color)
 		} else {
-			turnHint = "GnuGo is thinking..."
+			turnLine = "  ◌ Thinking...\n"
 		}
+
+		controlsLine = `
+  hjkl/↑↓←→ move   ⏎ play
+         p pass   q quit`
 	}
-	g.hint.SetText(fmt.Sprintf("%s%s\n\narrow keys: move cursor\nEnter: play move\np: pass turn\nq: quit", passHint, turnHint))
+
+	g.hint.SetText(fmt.Sprintf("%s%s%s", statusLine, turnLine, controlsLine))
 }
 
 // IsFinished returns true if the game is over.
@@ -303,7 +329,7 @@ func drawGridCell(s tcell.Screen, c tcell.Style, r rune, x, y, l, t, boardWidth 
 // getGridRune returns the appropriate box-drawing character for a grid position
 func getGridRune(x, y, width, height int, isHoshi bool) rune {
 	if isHoshi {
-		return '•'
+		return '◦' // Subtle star point marker
 	}
 
 	isTop := y == 0
