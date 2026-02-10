@@ -174,10 +174,19 @@ section {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border);
     border-radius: 8px;
-    max-width: 400px;
+    max-width: 720px;
     margin: 0 auto var(--spacing-xl);
     overflow: hidden;
     text-align: left;
+}
+
+/* Asciinema Player Customization */
+#demo-player .ap-wrapper {
+    border-radius: 8px;
+}
+
+#demo-player .ap-player {
+    font-size: 14px;
 }
 
 .terminal-header {

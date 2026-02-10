@@ -114,6 +114,7 @@
     </script>
 
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="asciinema-player.css" />
   </head>
   <body>
     <!-- Skip Link for Accessibility -->
@@ -148,27 +149,7 @@
           opponent
         </p>
 
-        <div
-          class="terminal-demo"
-          aria-label="Terminal demonstration showing a Go board"
-        >
-          <div class="terminal-header">
-            <span class="terminal-dot red"></span>
-            <span class="terminal-dot yellow"></span>
-            <span class="terminal-dot green"></span>
-            <span class="terminal-title">termsuji-local</span>
-          </div>
-          <pre class="terminal-content"><code> 9  ┌─┬─┬─┬─┬─┬─┬─┬─┐
- 8  ├─┼─┼─┼─┼─┼─┼─┼─┤
- 7  ├─┼ ● ● ┼─┼ ● ┼─┤
- 6  ├─┼ ● ┼─┼─┼─┼─┼─┤
- 5  ├─┼─┼─┼ ● ┼─┼─┼─┤
- 4  ├─┼─┼─┼─┼─┼─┼─┼─┤
- 3  ├─┼ ● ┼─┼─┼─•─┼─┤
- 2  ├─┼─┼─┼─┼─┼─┼─┼─┤
- 1  └─┴─┴─┴─┴─┴─┴─┴─┘
-    A B C D E F G H I</code></pre>
-        </div>
+        <div id="demo-player" class="terminal-demo" aria-label="Terminal demonstration showing a Go game"></div>
 
         <div class="cta-buttons">
           <a href="#install" class="btn btn-primary">Get Started</a>
@@ -428,5 +409,18 @@ go build -o termsuji-local .</code></pre>
         by lvank
       </p>
     </footer>
+
+    <script src="asciinema-player.min.js"></script>
+    <script>
+      AsciinemaPlayer.create('termsuji-demo.cast', document.getElementById('demo-player'), {
+        cols: 80,
+        rows: 24,
+        autoPlay: true,
+        loop: true,
+        theme: 'asciinema',
+        poster: 'npt:0:10',
+        idleTimeLimit: 2
+      });
+    </script>
   </body>
 </html>
