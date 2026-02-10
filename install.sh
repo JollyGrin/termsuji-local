@@ -3,7 +3,10 @@ set -e
 
 REPO="JollyGrin/termsuji-local"
 BINARY_NAME="termsuji-local"
-INSTALL_DIR="/usr/local/bin"
+INSTALL_DIR="${HOME}/.local/bin"
+
+# Create install directory if needed
+mkdir -p "$INSTALL_DIR"
 
 # Detect OS
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -44,15 +47,20 @@ TMP_FILE=$(mktemp)
 curl -fsSL "$URL" -o "$TMP_FILE"
 
 # Install
-if [ -w "$INSTALL_DIR" ]; then
-    mv "$TMP_FILE" "$INSTALL_DIR/$BINARY_NAME"
-    chmod +x "$INSTALL_DIR/$BINARY_NAME"
-else
-    echo "Need sudo to install to $INSTALL_DIR"
-    sudo mv "$TMP_FILE" "$INSTALL_DIR/$BINARY_NAME"
-    sudo chmod +x "$INSTALL_DIR/$BINARY_NAME"
-fi
+mv "$TMP_FILE" "$INSTALL_DIR/$BINARY_NAME"
+chmod +x "$INSTALL_DIR/$BINARY_NAME"
 
 echo "Installed $BINARY_NAME to $INSTALL_DIR/$BINARY_NAME"
 echo ""
+
+# Check if ~/.local/bin is in PATH
+if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+    echo "Add this to your shell profile (~/.zshrc or ~/.bashrc):"
+    echo ""
+    echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo ""
+    echo "Then restart your terminal or run: source ~/.zshrc"
+    echo ""
+fi
+
 echo "Run 'termsuji-local' to start playing!"
