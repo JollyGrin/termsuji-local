@@ -60,49 +60,12 @@ sudo apt install gnugo
 ## Installation
 
 ```bash
-git clone https://github.com/yourname/termsuji-local.git
+git clone git@github.com:JollyGrin/termsuji-local.git
 cd termsuji-local
 go build
 ```
 
 This creates a `termsuji-local` executable in the current directory.
-
-## Quick Access (Shell Shortcut)
-
-Add a function to your shell config for easy access:
-
-**macOS/Linux (bash)** - add to `~/.bashrc` or `~/.bash_profile`:
-```bash
-gogo() {
-    cd ~/git/baduk/termsuji-local && go build && ./termsuji-local "$@"
-}
-```
-
-**macOS/Linux (zsh)** - add to `~/.zshrc`:
-```bash
-gogo() {
-    cd ~/git/baduk/termsuji-local && go build && ./termsuji-local "$@"
-}
-```
-
-**Fish shell** - add to `~/.config/fish/config.fish`:
-```fish
-function gogo
-    cd ~/git/baduk/termsuji-local && go build && ./termsuji-local $argv
-end
-```
-
-After adding, reload your shell config:
-```bash
-source ~/.bashrc  # or ~/.zshrc
-```
-
-Now you can start a game with:
-```bash
-gogo                    # Default settings
-gogo --boardsize 9      # Quick 9x9 game
-gogo --boardsize 13 --level 8  # 13x13 against stronger AI
-```
 
 ## Usage
 
