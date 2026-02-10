@@ -1,49 +1,177 @@
-# Termsuji
+# termsuji-local
 
-termsuji is an application to play Go in your terminal. It is limited in features and scope, but you can play and finish games in progress on it. It is on github as a reference implementation, and not a reliable or stable package.
+A beautiful terminal UI for playing Go/Baduk against GnuGo offline.
 
-The *api* package can be used as a starting point to work with the online-go.com REST and realtime APIs. It only exports a limited part of the API and it may change without notice.
+Fork of [termsuji](https://github.com/lvank/termsuji) that replaces the online-go.com backend with a local GnuGo (GTP) subprocess interface.
 
-If you want to build yourself (or if your architecture isn't listed), [download/install Go 1.18 or higher](https://go.dev/dl), download and extract the source code, register an Oauth application at https://online-go.com/oauth2/applications/ (this requires an online-go.com account), set the client type to "Public" and the grant type to "resource owner password based", place the client ID in `api/client_id.txt` without any whitespace, and run/build the application with `go run .` or `go build .` in the source code directory.
+```
+   A B C D E F G H J K L M N O P Q R S T
+19 . . . . . . . . . . . . . . . . . . . 19
+18 . . . . . . . . . . . . . . . . . . . 18
+17 . . . + . . . . . + . . . . . + . . . 17
+16 . . . X . . . . . . . . . . . O . . . 16
+15 . . . . . . . . . . . . . . . . . . . 15
+...
+```
 
-![termsuji_game](https://user-images.githubusercontent.com/110688516/184015075-afa1bb8b-cdff-4e53-ba89-45be2353d2ed.png)
-![termsuji_unicode](https://user-images.githubusercontent.com/110688516/184015096-a47c3439-0809-43ea-a89e-61a572c7c9f1.png)
+## Features
+
+- Beautiful terminal-based Go board (inherited from termsuji)
+- Play against GnuGo locally, completely offline
+- No time limits (untimed games)
+- Configurable board sizes (9x9, 13x13, 19x19)
+- Adjustable engine difficulty (levels 1-10)
+- Choose your color (Black/White)
+- Multiple visual themes (default, vaporwave, unicode, catdog, hongoku)
+
+## Requirements
+
+- Go 1.18+
+- GnuGo installed and in PATH
+- Terminal with Unicode support
+
+### Installing GnuGo
+
+**macOS** (via Homebrew):
+```bash
+brew install gnugo
+```
+
+**Linux (Ubuntu/Debian)**:
+```bash
+sudo apt install gnugo
+```
+
+**Linux (Fedora)**:
+```bash
+sudo dnf install gnugo
+```
+
+**Linux (Arch)**:
+```bash
+sudo pacman -S gnugo
+```
+
+**Windows**:
+1. Download GnuGo from http://www.gnu.org/software/gnugo/download.html
+2. Extract to a folder (e.g., `C:\gnugo`)
+3. Add the folder to your PATH:
+   - Open System Properties → Advanced → Environment Variables
+   - Edit PATH and add `C:\gnugo` (or wherever you extracted it)
+4. Verify installation: `gnugo --version`
+
+Alternatively on Windows with WSL:
+```bash
+sudo apt install gnugo
+```
+
+## Installation
+
+```bash
+git clone https://github.com/yourname/termsuji-local.git
+cd termsuji-local
+go build
+```
+
+This creates a `termsuji-local` executable in the current directory.
+
+## Quick Access (Shell Shortcut)
+
+Add a function to your shell config for easy access:
+
+**macOS/Linux (bash)** - add to `~/.bashrc` or `~/.bash_profile`:
+```bash
+gogo() {
+    cd ~/git/baduk/termsuji-local && go build && ./termsuji-local "$@"
+}
+```
+
+**macOS/Linux (zsh)** - add to `~/.zshrc`:
+```bash
+gogo() {
+    cd ~/git/baduk/termsuji-local && go build && ./termsuji-local "$@"
+}
+```
+
+**Fish shell** - add to `~/.config/fish/config.fish`:
+```fish
+function gogo
+    cd ~/git/baduk/termsuji-local && go build && ./termsuji-local $argv
+end
+```
+
+After adding, reload your shell config:
+```bash
+source ~/.bashrc  # or ~/.zshrc
+```
+
+Now you can start a game with:
+```bash
+gogo                    # Default settings
+gogo --boardsize 9      # Quick 9x9 game
+gogo --boardsize 13 --level 8  # 13x13 against stronger AI
+```
+
+## Usage
+
+Simply run the binary:
+
+```bash
+./termsuji-local
+```
+
+### Command Line Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--boardsize` | Board size (9, 13, or 19) | 19 |
+| `--level` | GnuGo difficulty (1-10) | 5 |
+| `--komi` | Komi compensation for White | 6.5 |
+
+You'll be presented with a game setup screen where you can configure:
+- Board size (9x9, 13x13, 19x19)
+- Your color (Black plays first, White plays second)
+- GnuGo difficulty level (1-10)
+- Komi (compensation for White)
+
+## Controls
+
+| Key | Action |
+|-----|--------|
+| Arrow keys | Move cursor |
+| Enter | Play move at cursor |
+| p | Pass turn |
+| t | Change theme |
+| q | Quit (or deselect cursor) |
 
 ## Configuration
 
-There's a themes option in-application with some preset themes, but you can get more detailed configuration by editing the configuration file.
-The application stores a configuration file in $XDG_CONFIG_HOME/termsuji/config.json (or C:/Users/YourUsername/AppData/Roaming/termsuji/config.json on Windows) with the following configurable values.
+Configuration is stored at `~/.config/termsuji-local/config.json`:
 
-To find out "Unicode code points", you can visit https://unicode-table.com/, look up a symbol you want to use and copy the number from "HTML code" (or for the technically inclined, convert the Unicode number from hex to int).
-
-To find out colour numbers, refer to the bottom left numbers on https://upload.wikimedia.org/wikipedia/commons/1/15/Xterm_256color_chart.svg
-To reset your default settings, just delete the configuration file and it'll be regenerated with the defaults.
-
-(Note: for symbols, you can't use 1-31 and 127-159.)
-
-```
-{"theme": {
-  "draw_stone_bg": If true, will draw a stone with the black/black_alt colours. If false, draws the black/white symbols instead. Default true.
-  "draw_cursor_bg": If true, will draw the currently selected square with the cursor_bg colour. If false, draws the cursor symbol instead. Default false.
-  "draw_last_played_bg": If true, will draw the last played stone with the last_played_bg colour. If false, draws the last_played symbol instead. Default false.
-  "fullwidth_letters": If true, will draw letter coordinates as fullwidth Japanese characters, occupying two spaces. Default false.
-  "colors": {
-    "board":             Go board background colour
-    "board_alt":         Go board background colour (for alternating squares)
-    "black":             Black player stone colour
-    "black_alt":         Black player stone colour (for alternating squares)
-    "white":             White player stone colour
-    "white_alt":         White player stone colour (for alternating squares)
-    "cursor_fg":         Cursor foreground colour (if no stone is selected)
-    "cursor_bg":         Cursor background colour (if draw_stone_bg is true)
-    "last_played_bg":    Last played stone background colour (if draw_last_played_bg is true)
-  },
-  "symbols": {
-    "black":       Unicode code point for black stones. Default 32 (a blank space)
-    "white":       Unicode code point for white stones. Default 32 (a blank space)
-    "board":       Unicode code point for the board itself. Default 32 (a blank space)
-    "cursor":      Unicode code point for the cursor. Default 88, or 'X'
-    "last_played": Unicode code point to mark the last played stone. Default 47, or '/'
+```json
+{
+  "theme": { ... },
+  "gnugo": {
+    "gnugo_path": "gnugo",
+    "default_board_size": 19,
+    "default_komi": 6.5,
+    "default_level": 5
   }
-}}
+}
 ```
+
+## Themes
+
+- **default** - Classic board with terminal colors
+- **vaporwave** - Magenta/cyan aesthetic
+- **unicode** - Emoji stones with Unicode board
+- **catdog** - Cat vs dog emoji theme
+- **hongoku** - Japanese kanji theme
+
+## Credits
+
+Based on [termsuji](https://github.com/lvank/termsuji) by lvank.
+
+## License
+
+MIT

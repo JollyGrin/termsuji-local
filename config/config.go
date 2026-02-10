@@ -10,8 +10,7 @@ import (
 )
 
 var (
-	cfgFile  = "termsuji/config.json"
-	authFile = "termsuji/auth.json"
+	cfgFile = "termsuji-local/config.json"
 )
 
 type InvalidConfig struct {
@@ -29,6 +28,7 @@ type ConfigColors struct {
 	BlackColorAlt     int `json:"black_alt"`
 	WhiteColor        int `json:"white"`
 	WhiteColorAlt     int `json:"white_alt"`
+	LineColor         int `json:"line"`
 	CursorColorFG     int `json:"cursor_fg"`
 	CursorColorBG     int `json:"cursor_bg"`
 	LastPlayedColorBG int `json:"last_played_bg"`
@@ -47,12 +47,22 @@ type Theme struct {
 	DrawCursorBackground     bool          `json:"draw_cursor_bg"`
 	DrawLastPlayedBackground bool          `json:"draw_last_played_bg"`
 	FullWidthLetters         bool          `json:"fullwidth_letters"`
+	UseGridLines             bool          `json:"use_grid_lines"`
 	Colors                   ConfigColors  `json:"colors"`
 	Symbols                  ConfigSymbols `json:"symbols"`
 }
 
+// GnuGoConfig holds GnuGo-specific settings.
+type GnuGoConfig struct {
+	Path             string  `json:"gnugo_path"`
+	DefaultBoardSize int     `json:"default_board_size"`
+	DefaultKomi      float64 `json:"default_komi"`
+	DefaultLevel     int     `json:"default_level"`
+}
+
 type Config struct {
-	Theme Theme `json:"theme"`
+	Theme  Theme       `json:"theme"`
+	GnuGo  GnuGoConfig `json:"gnugo"`
 }
 
 func InitConfig() (*Config, error) {
@@ -82,31 +92,6 @@ func (c *Config) Save() {
 		panic(err)
 	}
 	saveCfgFile(absPath, c, 0664)
-}
-
-type AuthData struct {
-	Username string `json:"username"`
-	UserID   int64  `json:"id"`
-	Tokens   struct {
-		Refresh string `json:"refresh"`
-	} `json:"tokens"`
-}
-
-func InitAuthData() *AuthData {
-	authData := AuthData{}
-	absPath, err := xdg.SearchStateFile(authFile)
-	if err == nil {
-		readCfgFile(absPath, &authData)
-	}
-	return &authData
-}
-
-func (a *AuthData) Save() {
-	absPath, err := xdg.StateFile(authFile)
-	if err != nil {
-		panic(err)
-	}
-	saveCfgFile(absPath, a, 0600)
 }
 
 func saveCfgFile(filePath string, a interface{}, perm fs.FileMode) {

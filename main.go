@@ -1,71 +1,84 @@
-//termsuji is a application to play online-go.com in a terminal.
-//It is not complete and can only read board state and play moves, and is
-//intended more as a reference than a full-fledged application.
+// termsuji-local is a terminal application to play Go against GnuGo offline.
 package main
 
 import (
+	"flag"
 	"fmt"
-	"time"
+	"os/exec"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/lvank/termsuji/api"
-	"github.com/lvank/termsuji/config"
-	"github.com/lvank/termsuji/ui"
 	"github.com/rivo/tview"
+
+	"termsuji-local/config"
+	"termsuji-local/engine"
+	"termsuji-local/engine/gtp"
+	"termsuji-local/ui"
 )
 
-var lastRefresh time.Time = time.Now()
+// Command-line flags
+var (
+	flagBoardSize  = flag.Int("boardsize", 0, "Board size (9, 13, or 19)")
+	flagColor      = flag.String("color", "", "Player color (black or white)")
+	flagDifficulty = flag.Int("difficulty", 0, "GnuGo difficulty level (1-10)")
+	flagKomi       = flag.Float64("komi", -1, "Komi value")
+	flagQuickStart = flag.Bool("play", false, "Start game immediately with defaults")
+)
+
 var app *tview.Application
 var rootPage *tview.Pages
-var gameListFrame *tview.Frame
-var gameList *tview.List
-var frameHint *tview.Frame
 var gameBoard *ui.GoBoardUI
-var setLoading func(bool)
+var gameFrame *tview.Flex
+var gameHint *tview.TextView
+var cfg *config.Config
 
 func main() {
-	auth := config.InitAuthData()
-	if auth.Tokens.Refresh != "" {
-		api.AuthenticateRefreshToken(auth.Tokens.Refresh)
-	}
-	cfg, err := config.InitConfig()
+	flag.Parse()
+
+	var err error
+	cfg, err = config.InitConfig()
 	if err != nil {
 		panic(err)
 	}
-	cfg.Save() // TODO settings screen or something
+
+	// Always use the default theme (lines theme) on startup
+	cfg.Theme = config.DefaultTheme
+
+	// Check if GnuGo is available
+	if err := checkGnuGo(); err != nil {
+		fmt.Println("Error: GnuGo not found.")
+		fmt.Println("Please install GnuGo:")
+		fmt.Println("  macOS:  brew install gnugo")
+		fmt.Println("  Ubuntu: sudo apt install gnugo")
+		fmt.Println("  Fedora: sudo dnf install gnugo")
+		return
+	}
+
+	// Check if quick start requested
+	quickStart := *flagQuickStart || *flagBoardSize > 0 || *flagColor != "" || *flagDifficulty > 0 || *flagKomi >= 0
+
 	app = tview.NewApplication()
 	rootPage = tview.NewPages()
-	rootPage.SetBorder(true).SetTitle("termsuji")
-	gameList = tview.NewList()
-	gameListFrame = tview.NewFrame(gameList)
-	gameListFrame.SetBorders(0, 0, 0, 0, 0, 0)
+	rootPage.SetBorder(true).SetTitle(" termsuji-local ")
 
-	loadingModal := tview.NewModal()
-	loadingModal.SetText("Loading...")
-	setLoading = func(loading bool) {
-		f := rootPage.ShowPage
-		if !loading {
-			f = rootPage.HidePage
-		}
-		f("loading")
-	}
-	gameFrame := tview.NewFlex()
-	gameHint := tview.NewTextView()
+	// Game view setup
+	gameFrame = tview.NewFlex().SetDirection(tview.FlexRow)
+	gameHint = tview.NewTextView()
 	gameHint.SetBorder(true)
 	gameBoard = ui.NewGoBoard(app, cfg, gameHint)
+
+	// Initial layout: board on top, hint at bottom
 	gameFrame.
-		AddItem(gameBoard.Box, 20*2+3, 1, true).
-		AddItem(gameHint, 0, 2, false)
+		AddItem(gameBoard.Box, 0, 1, true).
+		AddItem(gameHint, 7, 0, false)
+
+	// Game board input handling
 	gameBoard.Box.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune && event.Rune() == 'q' {
 			if gameBoard.SelectedTile() != nil {
 				gameBoard.ResetSelection()
 			} else {
 				gameBoard.Close()
-				async(func() {
-					refreshGames()
-					rootPage.SwitchToPage("browser")
-				})
+				rootPage.SwitchToPage("setup")
 			}
 			return nil
 		}
@@ -87,101 +100,52 @@ func main() {
 		case tcell.KeyRune:
 			switch event.Rune() {
 			case 'p':
-				gameBoard.PlayMove(-1, -1)
-			case 't':
-				rootPage.ShowPage("themes")
-			}
-		}
-		return event
-	})
-	gameList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyRune:
-			switch event.Rune() {
-			case 'q':
-				app.Stop()
-				return nil
-			case 'r':
-				async(func() {
-					refreshGames()
-				})
-				return nil
-			case 't':
-				rootPage.ShowPage("themes")
-				return nil
+				gameBoard.Pass()
 			}
 		}
 		return event
 	})
 
-	loginForm := tview.NewForm()
-	loginFrame := tview.NewFrame(loginForm)
-	loginForm.
-		AddInputField("Username", auth.Username, 32, nil, nil). //if we have a cached username, prefill it
-		AddPasswordField("Password", "", 32, '*', nil).
-		AddButton("Submit", func() {
-			err := api.AuthenticatePassword(
-				loginForm.GetFormItem(0).(*tview.InputField).GetText(),
-				loginForm.GetFormItem(1).(*tview.InputField).GetText(),
-			)
-			if err != nil {
-				loginFrame.Clear().AddText(err.Error(), true, tview.AlignLeft, tcell.PaletteColor(1))
-				return
-			}
-			storeAuthData(auth)
-			refreshGames()
-			rootPage.SwitchToPage("browser")
-		})
-	loginFrame.
-		SetBorders(0, 0, 0, 0, 1, 0).
-		AddText("Log in to OGS", true, tview.AlignLeft, tcell.PaletteColor(3))
+	// Game setup screen
+	setupUI := ui.NewGameSetup(
+		func(gameCfg engine.GameConfig) {
+			startGame(gameCfg)
+		},
+		func() {
+			app.Stop()
+		},
+		func() {
+			rootPage.SwitchToPage("colors")
+		},
+	)
 
-	themeList := tview.NewList()
-	themeList.SetTitle("Choose a theme")
-	selectTheme := func(i int, main, secondary string, shortcut rune) {
-		var theme config.Theme
-		switch main {
-		case "default":
-			theme = config.DefaultTheme
-		case "vaporwave":
-			theme = config.VaporwaveTheme
-		case "unicode":
-			theme = config.UnicodeTheme
-		case "catdog":
-			theme = config.CatdogTheme
-		case "hongoku":
-			theme = config.HongokuTheme
-		default: //No action
+	// Color configuration screen
+	colorConfig := ui.NewColorConfig(cfg, func() {
+		// Refresh the game board with new colors
+		gameBoard.SetConfig(cfg)
+		rootPage.SwitchToPage("setup")
+	})
+	colorConfig.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEsc || (event.Key() == tcell.KeyRune && event.Rune() == 'q') {
+			rootPage.SwitchToPage("setup")
+			return nil
 		}
-
-		if main != "quit" {
-			cfg.Theme = theme
-			cfg.Save()
-			gameBoard.SetConfig(cfg)
+		if event.Key() == tcell.KeyTab {
+			colorConfig.ToggleMode()
+			return nil
 		}
-		rootPage.HidePage("themes")
-	}
-	themeList.
-		AddItem("default", "The default board theme", '1', nil).
-		AddItem("vaporwave", "Magenta/cyan board theme", '2', nil).
-		AddItem("unicode", "Display board with Unicode emoji symbols", '3', nil).
-		AddItem("catdog", "Board becomes zoo", '4', nil).
-		AddItem("hongoku", "Board becomes unreadable", '5', nil).
-		AddItem("quit", "Keep your current settings", 'q', nil).
-		SetSelectedFunc(selectTheme)
+		return event
+	})
 
-	rootPage.AddPage("login", loginFrame, true, true)
-	rootPage.AddPage("browser", gameListFrame, true, false)
-	rootPage.AddPage("gameview", gameFrame, true, false)
-	rootPage.AddPage("themes", themeList, true, false)
-	rootPage.AddPage("loading", loadingModal, false, false)
+	// Add pages - start on setup by default, or gameview if quick start
+	rootPage.AddPage("setup", setupUI.Form(), true, !quickStart)
+	rootPage.AddPage("gameview", gameFrame, true, quickStart)
+	rootPage.AddPage("colors", colorConfig.Flex(), true, false)
 
-	if api.AuthData.Authenticated {
-		storeAuthData(auth)
-		refreshGames()
-		rootPage.SwitchToPage("browser")
-	} else {
-		rootPage.SwitchToPage("login")
+	// Quick start if flags provided
+	if quickStart {
+		gameCfg := buildGameConfigFromFlags()
+		startGame(gameCfg)
 	}
 
 	if err := app.SetRoot(rootPage, true).Run(); err != nil {
@@ -189,45 +153,72 @@ func main() {
 	}
 }
 
-func refreshGames() {
-	gameList.Clear()
-	async(func() {
-		lastRefresh = time.Now()
-		gamesArray := api.GetGamesList()
-		i := 0
-		for _, game := range gamesArray.Games {
-			if game.GameOver() {
-				continue
-			}
-			gameID := game.ID
-			gameList.AddItem(game.Name, game.Description(), rune('1'+i), func() {
-				async(func() {
-					gameBoard.Connect(gameID)
-					rootPage.SwitchToPage("gameview")
-				})
+// startGame starts a game with the given configuration.
+func startGame(gameCfg engine.GameConfig) {
+	// Use configured GnuGo path
+	gameCfg.EnginePath = cfg.GnuGo.Path
+
+	// Update game board flex layout
+	gameFrame.Clear()
+	gameFrame.
+		AddItem(gameBoard.Box, 0, 1, true).
+		AddItem(gameHint, 7, 0, false)
+
+	// Start the game
+	eng := gtp.NewGTPEngine(gameCfg)
+	if err := gameBoard.ConnectEngine(eng); err != nil {
+		// Show error modal
+		modal := tview.NewModal().
+			SetText(fmt.Sprintf("Failed to start game:\n%s", err.Error())).
+			AddButtons([]string{"OK"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				rootPage.HidePage("error")
 			})
-			i++
-		}
-		gameListHint := fmt.Sprintf("r: refresh, t: themes, q: quit")
-		gameListFrame.Clear().AddText(gameListHint, false, tview.AlignLeft, tcell.ColorDefault)
-	})
+		rootPage.AddPage("error", modal, true, true)
+		return
+	}
+	rootPage.SwitchToPage("gameview")
 }
 
-//Helper function to show a loading screen while blocking functions are being called.
-func async(f func()) {
-	go func() {
-		setLoading(true)
-		app.Draw()
-		f()
-		setLoading(false)
-		app.Draw()
-	}()
+// buildGameConfigFromFlags creates a GameConfig from command-line flags.
+func buildGameConfigFromFlags() engine.GameConfig {
+	// Start with defaults
+	gameCfg := engine.GameConfig{
+		BoardSize:   cfg.GnuGo.DefaultBoardSize,
+		Komi:        cfg.GnuGo.DefaultKomi,
+		PlayerColor: 1, // Black by default
+		EngineLevel: cfg.GnuGo.DefaultLevel,
+		EnginePath:  cfg.GnuGo.Path,
+	}
+
+	// Override with flags
+	if *flagBoardSize == 9 || *flagBoardSize == 13 || *flagBoardSize == 19 {
+		gameCfg.BoardSize = *flagBoardSize
+	}
+
+	if *flagColor == "black" || *flagColor == "b" {
+		gameCfg.PlayerColor = 1
+	} else if *flagColor == "white" || *flagColor == "w" {
+		gameCfg.PlayerColor = 2
+	}
+
+	if *flagDifficulty >= 1 && *flagDifficulty <= 10 {
+		gameCfg.EngineLevel = *flagDifficulty
+	}
+
+	if *flagKomi >= 0 {
+		gameCfg.Komi = *flagKomi
+	}
+
+	return gameCfg
 }
 
-//Stores authentication data from api package after successful authentication.
-func storeAuthData(a *config.AuthData) {
-	a.Username = api.AuthData.Player.Username
-	a.UserID = api.AuthData.Player.ID
-	a.Tokens.Refresh = api.AuthData.Oauth.RefreshToken
-	a.Save()
+// checkGnuGo verifies that GnuGo is installed and accessible.
+func checkGnuGo() error {
+	path := cfg.GnuGo.Path
+	if path == "" {
+		path = "gnugo"
+	}
+	_, err := exec.LookPath(path)
+	return err
 }
