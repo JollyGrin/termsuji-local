@@ -25,6 +25,18 @@ type GoBoardUI struct {
 	eng          engine.GameEngine
 	styles       []tcell.Color
 	infoPanel    *GameInfoPanel
+	focusMode    bool
+}
+
+// ToggleFocusMode toggles focus mode and returns the new state.
+func (g *GoBoardUI) ToggleFocusMode() bool {
+	g.focusMode = !g.focusMode
+	return g.focusMode
+}
+
+// IsFocusMode returns true if focus mode is enabled.
+func (g *GoBoardUI) IsFocusMode() bool {
+	return g.focusMode
 }
 
 func (g *GoBoardUI) SelectedTile() *types.BoardPos {

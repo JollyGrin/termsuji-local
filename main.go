@@ -143,6 +143,12 @@ func main() {
 				gameBoard.MoveSelection(1, 0)
 			case 'p':
 				gameBoard.Pass()
+			case 'f':
+				if gameBoard.ToggleFocusMode() {
+					ui.BuildFocusLayout(gameFrame, gameBoard)
+				} else {
+					ui.RebuildNormalLayout(gameFrame, gameBoard, gameHint)
+				}
 			}
 		}
 		return event
