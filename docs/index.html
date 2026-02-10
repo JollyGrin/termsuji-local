@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary Meta Tags -->
+    <title>termsuji-local - Terminal Go/Baduk Game Against AI</title>
+    <meta
+      name="title"
+      content="termsuji-local - Terminal Go/Baduk Game Against AI"
+    />
+    <meta
+      name="description"
+      content="Play the ancient strategy board game Go (Baduk/Weiqi) in your terminal against GnuGo AI. Beautiful TUI, multiple themes, offline play, configurable difficulty. Free and open source."
+    />
+    <meta
+      name="keywords"
+      content="Go, Baduk, Weiqi, terminal, CLI, TUI, GnuGo, AI, board game, strategy game, offline, open source"
+    />
+    <meta name="author" content="termsuji-local contributors" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://jollygrin.github.io/termsuji-local/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://jollygrin.github.io/termsuji-local/"
+    />
+    <meta
+      property="og:title"
+      content="termsuji-local - Terminal Go/Baduk Game Against AI"
+    />
+    <meta
+      property="og:description"
+      content="Play the ancient strategy board game Go (Baduk/Weiqi) in your terminal against GnuGo AI. Beautiful TUI, multiple themes, offline play."
+    />
+    <meta
+      property="og:image"
+      content="https://jollygrin.github.io/termsuji-local/og-image.png"
+    />
+    <meta property="og:site_name" content="termsuji-local" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:url"
+      content="https://jollygrin.github.io/termsuji-local/"
+    />
+    <meta
+      name="twitter:title"
+      content="termsuji-local - Terminal Go/Baduk Game Against AI"
+    />
+    <meta
+      name="twitter:description"
+      content="Play the ancient strategy board game Go (Baduk/Weiqi) in your terminal against GnuGo AI. Beautiful TUI, multiple themes, offline play."
+    />
+    <meta
+      name="twitter:image"
+      content="https://jollygrin.github.io/termsuji-local/og-image.png"
+    />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "termsuji-local",
+        "description": "A terminal-based Go (Baduk/Weiqi) game client that lets you play against GnuGo AI completely offline. Features beautiful terminal UI, multiple visual themes, configurable board sizes and difficulty levels.",
+        "applicationCategory": "GameApplication",
+        "applicationSubCategory": "Board Game",
+        "operatingSystem": "macOS, Linux, Windows",
+        "softwareVersion": "1.0.0",
+        "author": {
+          "@type": "Organization",
+          "name": "termsuji-local contributors"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Play Go/Baduk against GnuGo AI",
+          "Beautiful terminal-based interface",
+          "Multiple visual themes (Default, Vaporwave, Unicode, Catdog, Hongoku)",
+          "Configurable board sizes (9x9, 13x13, 19x19)",
+          "10 difficulty levels",
+          "Completely offline - no internet required",
+          "Cross-platform (macOS, Linux, Windows)"
+        ],
+        "screenshot": "https://jollygrin.github.io/termsuji-local/screenshot.png",
+        "url": "https://github.com/jollygrin/termsuji-local",
+        "downloadUrl": "https://github.com/jollygrin/termsuji-local/releases",
+        "softwareRequirements": "GnuGo installed on system",
+        "programmingLanguage": "Go",
+        "license": "https://opensource.org/licenses/MIT"
+      }
+    </script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "termsuji-local - Terminal Go/Baduk Game",
+        "description": "Official website for termsuji-local, a terminal-based Go game client",
+        "url": "https://jollygrin.github.io/termsuji-local/",
+        "mainEntity": {
+          "@type": "SoftwareApplication",
+          "name": "termsuji-local"
+        }
+      }
+    </script>
+
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Skip Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header>
+      <nav aria-label="Main navigation">
+        <div class="nav-brand">
+          <span class="logo" aria-hidden="true">&#9899;</span>
+          <span class="brand-name">termsuji-local</span>
+        </div>
+        <ul class="nav-links">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="#usage">Usage</a></li>
+          <li>
+            <a
+              href="https://github.com/jollygrin/termsuji-local"
+              rel="noopener noreferrer"
+              >GitHub</a
+            >
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <main id="main-content">
+      <section class="hero" aria-labelledby="hero-title">
+        <h1 id="hero-title">Play Go in Your Terminal</h1>
+        <p class="hero-subtitle">
+          A beautiful terminal-based Go (Baduk/Weiqi) client with offline AI
+          opponent
+        </p>
+
+        <div
+          class="terminal-demo"
+          aria-label="Terminal demonstration showing a Go board"
+        >
+          <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">termsuji-local</span>
+          </div>
+          <pre class="terminal-content"><code>   A B C D E F G H J
+ 9 . . . . . . . . . 9
+ 8 . . . . . . . . . 8
+ 7 . . <span class="stone-black">●</span> . . . <span class="stone-white">○</span> . . 7
+ 6 . . . . . . . . . 6
+ 5 . . . <span class="stone-black">●</span> . <span class="stone-white">○</span> . . . 5
+ 4 . . <span class="stone-black">●</span> . <span class="cursor">+</span> . <span class="stone-white">○</span> . . 4
+ 3 . . . <span class="stone-black">●</span> <span class="stone-white">○</span> <span class="stone-white">○</span> . . . 3
+ 2 . . . . . . . . . 2
+ 1 . . . . . . . . . 1
+   A B C D E F G H J
+
+ Black: ●  White: ○  Move: 8
+ [Enter] Play  [P] Pass  [Q] Quit</code></pre>
+        </div>
+
+        <div class="cta-buttons">
+          <a href="#install" class="btn btn-primary">Get Started</a>
+          <a
+            href="https://github.com/jollygrin/termsuji-local"
+            class="btn btn-secondary"
+            rel="noopener noreferrer"
+            >View on GitHub</a
+          >
+        </div>
+      </section>
+
+      <section id="features" class="features" aria-labelledby="features-title">
+        <h2 id="features-title">Features</h2>
+
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">&#127760;</div>
+            <h3>Offline Play</h3>
+            <p>
+              Play completely offline against GnuGo AI. No internet connection
+              or account required.
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">&#127912;</div>
+            <h3>Multiple Themes</h3>
+            <p>
+              Choose from 5 visual themes: Default, Vaporwave, Unicode, Catdog,
+              and Hongoku (Japanese kanji).
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">&#9881;</div>
+            <h3>Configurable</h3>
+            <p>
+              Board sizes (9x9, 13x13, 19x19), 10 difficulty levels, adjustable
+              komi, play as Black or White.
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">&#128187;</div>
+            <h3>Cross-Platform</h3>
+            <p>
+              Works on macOS, Linux, and Windows. Built with Go for easy
+              installation.
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">&#9201;</div>
+            <h3>No Time Limits</h3>
+            <p>
+              Take your time to think. Untimed games allow for thoughtful,
+              strategic play.
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">&#128279;</div>
+            <h3>Open Source</h3>
+            <p>
+              Free and open source. Contribute, modify, and learn from the code.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="install" class="install" aria-labelledby="install-title">
+        <h2 id="install-title">Installation</h2>
+
+        <h3>Prerequisites</h3>
+        <p>You need <strong>GnuGo</strong> installed on your system:</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>macOS (Homebrew)</span>
+          </div>
+          <pre><code>brew install gnugo</code></pre>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>Ubuntu/Debian</span>
+          </div>
+          <pre><code>sudo apt install gnugo</code></pre>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>Arch Linux</span>
+          </div>
+          <pre><code>sudo pacman -S gnugo</code></pre>
+        </div>
+
+        <h3>Install termsuji-local</h3>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>Using Go</span>
+          </div>
+          <pre><code>go install github.com/jollygrin/termsuji-local@latest</code></pre>
+        </div>
+
+        <p>Or clone and build from source:</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>From Source</span>
+          </div>
+          <pre><code>git clone https://github.com/jollygrin/termsuji-local.git
+cd termsuji-local
+go build -o termsuji-local .</code></pre>
+        </div>
+      </section>
+
+      <section id="usage" class="usage" aria-labelledby="usage-title">
+        <h2 id="usage-title">Usage</h2>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>Start a game</span>
+          </div>
+          <pre><code>termsuji-local</code></pre>
+        </div>
+
+        <h3>Controls</h3>
+        <table class="controls-table">
+          <thead>
+            <tr>
+              <th scope="col">Key</th>
+              <th scope="col">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><kbd>Arrow Keys</kbd></td>
+              <td>Move cursor on board</td>
+            </tr>
+            <tr>
+              <td><kbd>Enter</kbd></td>
+              <td>Place stone at cursor position</td>
+            </tr>
+            <tr>
+              <td><kbd>P</kbd></td>
+              <td>Pass your turn</td>
+            </tr>
+            <tr>
+              <td><kbd>T</kbd></td>
+              <td>Change visual theme</td>
+            </tr>
+            <tr>
+              <td><kbd>Q</kbd></td>
+              <td>Quit the game</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Game Setup Options</h3>
+        <ul>
+          <li>
+            <strong>Board Size:</strong> 9x9 (quick games), 13x13 (medium),
+            19x19 (full)
+          </li>
+          <li>
+            <strong>Your Color:</strong> Black (plays first) or White (plays
+            second)
+          </li>
+          <li><strong>Difficulty:</strong> 1 (easiest) to 10 (hardest)</li>
+          <li>
+            <strong>Komi:</strong> Compensation points for White (typically 6.5
+            or 7.5)
+          </li>
+        </ul>
+      </section>
+
+      <section class="about-go" aria-labelledby="about-title">
+        <h2 id="about-title">What is Go?</h2>
+        <p>
+          Go (also known as <strong>Baduk</strong> in Korean and
+          <strong>Weiqi</strong> in Chinese) is an ancient strategy board game
+          that originated in China over 2,500 years ago. Two players take turns
+          placing black and white stones on a grid, aiming to surround more
+          territory than their opponent.
+        </p>
+        <p>
+          Despite simple rules, Go has extraordinary strategic depth. The number
+          of possible game positions exceeds the number of atoms in the
+          observable universe, making it one of the most complex games ever
+          created.
+        </p>
+        <p>
+          Go was the last classic board game where AI could not defeat top human
+          players, until AlphaGo's historic victory in 2016. Today, AI Go
+          engines have become invaluable training tools for players of all
+          levels.
+        </p>
+      </section>
+
+      <section class="faq" aria-labelledby="faq-title">
+        <h2 id="faq-title">FAQ</h2>
+
+        <details>
+          <summary>What is GnuGo?</summary>
+          <p>
+            GnuGo is a free, open-source Go-playing program developed by the GNU
+            Project. It provides a reliable AI opponent for practice and uses
+            the GTP (Go Text Protocol) to communicate with interfaces like
+            termsuji-local.
+          </p>
+        </details>
+
+        <details>
+          <summary>How strong is the AI?</summary>
+          <p>
+            GnuGo plays at approximately 5-8 kyu level (intermediate amateur).
+            It's excellent for beginners and intermediate players. For stronger
+            AI opponents, consider using KataGo with a GTP-compatible interface.
+          </p>
+        </details>
+
+        <details>
+          <summary>Can I play online against other humans?</summary>
+          <p>
+            termsuji-local is designed for offline play against AI. For online
+            play against humans, check out the original
+            <a href="https://github.com/lvank/termsuji">termsuji</a> project
+            which connects to online-go.com.
+          </p>
+        </details>
+
+        <details>
+          <summary>What terminal should I use?</summary>
+          <p>
+            Any modern terminal works: Terminal.app (macOS), iTerm2, Windows
+            Terminal, GNOME Terminal, Konsole, Alacritty, Kitty, etc. For the
+            best experience, use a terminal that supports Unicode and 256
+            colors.
+          </p>
+        </details>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        termsuji-local is open source software.
+        <a
+          href="https://github.com/jollygrin/termsuji-local"
+          rel="noopener noreferrer"
+          >View on GitHub</a
+        >
+      </p>
+      <p>
+        A fork of
+        <a href="https://github.com/lvank/termsuji" rel="noopener noreferrer"
+          >termsuji</a
+        >
+        by lvank
+      </p>
+    </footer>
+  </body>
+</html>

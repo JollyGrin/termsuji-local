@@ -1,0 +1,56 @@
+# termsuji-local
+
+> A terminal-based Go (Baduk/Weiqi) game client for playing against GnuGo AI offline. Built with Go, featuring a beautiful TUI with multiple themes, configurable board sizes, and adjustable difficulty levels.
+
+termsuji-local is a fork of the original [termsuji](https://github.com/lvank/termsuji) project. While the original connects to online-go.com for multiplayer games, termsuji-local replaces the backend with a subprocess-based interface to GnuGo, allowing completely offline play.
+
+## Key Features
+
+- Beautiful terminal-based user interface using tview
+- Play Go against GnuGo AI completely offline
+- Multiple visual themes: Default, Vaporwave, Unicode, Catdog, Hongoku
+- Configurable board sizes: 9x9, 13x13, 19x19
+- 10 difficulty levels for GnuGo engine
+- Choose to play as Black or White
+- Adjustable komi (compensation for White)
+- No time limits - play at your own pace
+- Cross-platform: macOS, Linux, Windows
+
+## Technical Details
+
+- Language: Go 1.18+
+- UI Framework: tview (built on tcell)
+- Engine Communication: GTP Protocol (Go Text Protocol)
+- Prerequisite: GnuGo must be installed on the system
+
+## Installation
+
+Requires GnuGo:
+- macOS: `brew install gnugo`
+- Ubuntu/Debian: `sudo apt install gnugo`
+- Arch: `sudo pacman -S gnugo`
+
+Install termsuji-local:
+- `go install github.com/grins/termsuji-local@latest`
+
+## Controls
+
+- Arrow keys: Move cursor
+- Enter: Place stone
+- P: Pass turn
+- T: Change theme
+- Q: Quit
+
+## What is Go?
+
+Go (Baduk in Korean, Weiqi in Chinese) is an ancient strategy board game over 2,500 years old. Two players alternate placing black and white stones to surround territory. Simple rules lead to extraordinary strategic depth.
+
+## Documentation
+
+- [Main Page](https://grins.github.io/termsuji-local/): Full documentation and installation guide
+- [GitHub Repository](https://github.com/grins/termsuji-local): Source code, issues, and contributions
+
+## Optional
+
+- [SEO/LLM Research](https://grins.github.io/termsuji-local/SEO-LLM-RESEARCH.md): Research on SEO and LLM optimization practices
+- [Checklist](https://grins.github.io/termsuji-local/CHECKLIST.md): Implementation checklist for web optimization
