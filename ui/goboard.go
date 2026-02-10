@@ -31,7 +31,14 @@ type GoBoardUI struct {
 // ToggleFocusMode toggles focus mode and returns the new state.
 func (g *GoBoardUI) ToggleFocusMode() bool {
 	g.focusMode = !g.focusMode
+	g.refreshHint()
 	return g.focusMode
+}
+
+// SetFocusMode sets focus mode to the given state.
+func (g *GoBoardUI) SetFocusMode(enabled bool) {
+	g.focusMode = enabled
+	g.refreshHint()
 }
 
 // IsFocusMode returns true if focus mode is enabled.
@@ -279,6 +286,12 @@ func (g *GoBoardUI) refreshHint() {
 		g.infoPanel.SetBoardState(g.BoardState)
 	}
 
+	// Focus mode shows minimal hint
+	if g.focusMode {
+		g.hint.SetText("  f to toggle")
+		return
+	}
+
 	var statusLine, turnLine, controlsLine string
 
 	if g.finished {
@@ -306,7 +319,7 @@ func (g *GoBoardUI) refreshHint() {
 
 		controlsLine = `
   hjkl/↑↓←→ move   ⏎ play
-         p pass   q quit`
+         p pass   f focus   q quit`
 	}
 
 	g.hint.SetText(fmt.Sprintf("%s%s%s", statusLine, turnLine, controlsLine))

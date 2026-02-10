@@ -31,6 +31,7 @@ var (
 	flagDifficulty = flag.Int("difficulty", 0, "GnuGo difficulty level (1-10)")
 	flagKomi       = flag.Float64("komi", -1, "Komi value")
 	flagQuickStart = flag.Bool("play", false, "Start game immediately with defaults")
+	flagFocus      = flag.Bool("focus", false, "Start in focus mode (fullscreen board)")
 	flagVersion    = flag.Bool("version", false, "Print version and exit")
 	flagUpdate     = flag.Bool("update", false, "Update to the latest version")
 )
@@ -88,7 +89,7 @@ func main() {
 	}
 
 	// Check if quick start requested
-	quickStart := *flagQuickStart || *flagBoardSize > 0 || *flagColor != "" || *flagDifficulty > 0 || *flagKomi >= 0
+	quickStart := *flagQuickStart || *flagBoardSize > 0 || *flagColor != "" || *flagDifficulty > 0 || *flagKomi >= 0 || *flagFocus
 
 	app = tview.NewApplication()
 	rootPage = tview.NewPages()
@@ -145,7 +146,7 @@ func main() {
 				gameBoard.Pass()
 			case 'f':
 				if gameBoard.ToggleFocusMode() {
-					ui.BuildFocusLayout(gameFrame, gameBoard)
+					ui.BuildFocusLayout(gameFrame, gameBoard, gameHint)
 				} else {
 					ui.RebuildNormalLayout(gameFrame, gameBoard, gameHint)
 				}
@@ -194,6 +195,11 @@ func main() {
 	if quickStart {
 		gameCfg := buildGameConfigFromFlags()
 		startGame(gameCfg)
+		// Enter focus mode if requested
+		if *flagFocus {
+			gameBoard.SetFocusMode(true)
+			ui.BuildFocusLayout(gameFrame, gameBoard, gameHint)
+		}
 	}
 
 	if err := app.SetRoot(rootPage, true).Run(); err != nil {
