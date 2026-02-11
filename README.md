@@ -4,7 +4,7 @@ A beautiful terminal UI for playing Go/Baduk against GnuGo offline.
 
 Fork of [termsuji](https://github.com/lvank/termsuji) that replaces the online-go.com backend with a local GnuGo (GTP) subprocess interface.
 
-https://github.com/user-attachments/assets/2d962975-d831-4f44-b9be-3b0269d6ff18
+https://github.com/user-attachments/assets/a1840760-7898-43e2-bf6a-58927999c4fb
 
 ## Features
 
