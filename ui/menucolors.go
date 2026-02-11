@@ -13,7 +13,7 @@ var MenuColors = struct {
 	Hint        tcell.Color // Dim gray for hints
 	Selected    tcell.Color // Bright blue for selected items
 	Unselected  tcell.Color // Dim gray for unselected items
-	ButtonBG    tcell.Color // Button background
+	ButtonBG    tcell.Color // Button background (unused in flat design)
 	ButtonFocus tcell.Color // Focused button
 	ButtonText  tcell.Color // Button text
 }{
@@ -26,7 +26,7 @@ var MenuColors = struct {
 	Hint:        tcell.PaletteColor(245), // Dim gray
 	Selected:    tcell.PaletteColor(109), // Bright blue
 	Unselected:  tcell.PaletteColor(245), // Dim gray
-	ButtonBG:    tcell.PaletteColor(60),  // Nord blue
+	ButtonBG:    tcell.PaletteColor(60),  // Nord blue (unused in flat design)
 	ButtonFocus: tcell.PaletteColor(109), // Brighter blue
 	ButtonText:  tcell.PaletteColor(255), // White
 }

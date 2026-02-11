@@ -144,7 +144,7 @@ func NewGameSetup(onStart func(engine.GameConfig), onCancel func(), onColors fun
 	// Create inner flex layout with box and help text
 	innerFlex := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(nil, 0, 1, false).        // Top spacer
-		AddItem(setup.box, 25, 0, true).  // Card (fixed height)
+		AddItem(setup.box, 20, 0, true).  // Card (fixed height)
 		AddItem(nil, 0, 1, false).        // Bottom spacer
 		AddItem(helpText, 1, 0, false)
 
@@ -170,9 +170,9 @@ func (s *GameSetupUI) draw(screen tcell.Screen, x, y, width, height int) (int, i
 	// Draw card border and title
 	s.drawCard(screen, x, y, width, height)
 
-	// Content starts after title and divider
+	// Content starts after title
 	contentX := x + 4
-	contentY := y + 6
+	contentY := y + 4
 	contentWidth := width - 8
 
 	// Draw board size selector
@@ -189,11 +189,7 @@ func (s *GameSetupUI) draw(screen tcell.Screen, x, y, width, height int) (int, i
 
 	// Draw komi input
 	rows = s.komiInput.Draw(screen, contentX, contentY, contentWidth)
-	contentY += rows + 1
-
-	// Draw divider before buttons
-	s.drawDivider(screen, x, contentY, width)
-	contentY += 2
+	contentY += rows + 2 // spacing before buttons
 
 	// Draw buttons centered
 	s.drawButtons(screen, x, contentY, width)
@@ -245,25 +241,6 @@ func (s *GameSetupUI) drawCard(screen tcell.Screen, x, y, width, height int) {
 		screen.SetContent(titleX, titleY, ch, nil, titleStyle)
 		titleX++
 	}
-
-	// Divider after title
-	divY := y + 4
-	screen.SetContent(x, divY, '├', nil, borderStyle)
-	for col := x + 1; col < x+width-1; col++ {
-		screen.SetContent(col, divY, '─', nil, borderStyle)
-	}
-	screen.SetContent(x+width-1, divY, '┤', nil, borderStyle)
-}
-
-// drawDivider draws a horizontal divider.
-func (s *GameSetupUI) drawDivider(screen tcell.Screen, x, y, width int) {
-	borderStyle := tcell.StyleDefault.Foreground(MenuColors.Border).Background(MenuColors.CardBG)
-
-	screen.SetContent(x, y, '├', nil, borderStyle)
-	for col := x + 1; col < x+width-1; col++ {
-		screen.SetContent(col, y, '─', nil, borderStyle)
-	}
-	screen.SetContent(x+width-1, y, '┤', nil, borderStyle)
 }
 
 // drawButtons draws the action buttons centered.
