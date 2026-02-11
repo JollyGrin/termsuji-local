@@ -136,7 +136,7 @@ func NewGameSetup(onStart func(engine.GameConfig), onCancel func(), onColors fun
 
 	// Create help text
 	helpText := tview.NewTextView().
-		SetText("Tab · ↑↓ · ⏎ to navigate").
+		SetText("↑↓ options · Tab next · p play · ctrl-c quit").
 		SetTextAlign(tview.AlignCenter)
 	helpText.SetTextColor(MenuColors.Hint)
 	helpText.SetBackgroundColor(tcell.ColorDefault)
