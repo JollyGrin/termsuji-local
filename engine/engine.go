@@ -31,6 +31,10 @@ type GameEngine interface {
 	// Undo undoes the last move (one ply). Call twice to undo a player+engine move pair.
 	Undo() error
 
+	// ResetAndReplay clears the board and replays the given moves.
+	// Each move is [3]int{color, x, y} where color is 1=black/2=white, and x=-1,y=-1 means pass.
+	ResetAndReplay(moves [][3]int) error
+
 	// OnGameEnd registers a callback for when the game ends.
 	OnGameEnd(func(outcome string))
 

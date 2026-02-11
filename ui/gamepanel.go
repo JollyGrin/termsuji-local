@@ -6,6 +6,7 @@ import (
 	"github.com/rivo/tview"
 
 	"termsuji-local/engine/gtp"
+	"termsuji-local/sgf"
 	"termsuji-local/types"
 )
 
@@ -16,6 +17,7 @@ type GameInfoPanel struct {
 	komi        float64
 	moveHistory *[]MoveEntry
 	boardSize   int
+	planTree    *sgf.GameTree // non-nil when in planning mode
 }
 
 // NewGameInfoPanel creates a new game info panel.
@@ -55,6 +57,16 @@ func (p *GameInfoPanel) SetMoveHistory(history *[]MoveEntry, boardSize int) {
 	p.boardSize = boardSize
 }
 
+// SetPlanningMode enables planning mode display with the given tree.
+func (p *GameInfoPanel) SetPlanningMode(tree *sgf.GameTree) {
+	p.planTree = tree
+}
+
+// ClearPlanningMode disables planning mode display.
+func (p *GameInfoPanel) ClearPlanningMode() {
+	p.planTree = nil
+}
+
 // refresh updates the panel text.
 func (p *GameInfoPanel) refresh() {
 	if p.boardState == nil {
@@ -74,8 +86,63 @@ func (p *GameInfoPanel) refresh() {
 	// Move count
 	text += fmt.Sprintf("[white]Move:[-:-:-] %d\n", p.boardState.MoveNumber)
 
-	// Move history
-	if p.moveHistory != nil && len(*p.moveHistory) > 0 {
+	// Planning mode: show exploration path
+	if p.planTree != nil {
+		text += "\n[yellow::b]PLAN[-:-:-]\n"
+		text += "[dimgray]──────────────────────[-:-:-]\n"
+
+		// Show variation info
+		if p.planTree.NumVariations() > 1 {
+			text += fmt.Sprintf("[dimgray]var %d/%d[-]\n", p.planTree.VariationIndex()+1, p.planTree.NumVariations())
+		}
+
+		path := p.planTree.PathFromRoot()
+		if len(path) == 0 {
+			text += "[dimgray]  (no moves)[-]\n"
+		} else {
+			maxVisible := 12
+			start := 0
+			if len(path) > maxVisible {
+				start = len(path) - maxVisible
+			}
+
+			// Find current position in the path
+			currentIdx := len(p.planTree.PathFromRoot()) - 1
+
+			for i := start; i < len(path); i++ {
+				color, x, y := parsePlanMoveForPanel(path[i])
+				moveNum := i + 1
+
+				colorStr := "[white]B[-]"
+				if color == 2 {
+					colorStr = "[dimgray]W[-]"
+				}
+
+				coord := "pass"
+				if x >= 0 && y >= 0 {
+					size := p.boardSize
+					if p.boardState != nil && p.boardState.Width() > 0 {
+						size = p.boardState.Width()
+					}
+					if size > 0 {
+						coord = gtp.PosToGTPDisplay(x, y, size)
+					}
+				}
+
+				marker := " "
+				if i == currentIdx {
+					marker = "[yellow]>[-]"
+				}
+
+				text += fmt.Sprintf("%s[dimgray]%3d.[-] %s %s\n", marker, moveNum, colorStr, coord)
+			}
+
+			if start > 0 {
+				text += fmt.Sprintf("[dimgray]  ··· %d earlier[-]\n", start)
+			}
+		}
+	} else if p.moveHistory != nil && len(*p.moveHistory) > 0 {
+		// Normal mode: show move history
 		text += "\n[white::b]Moves[-:-:-]\n"
 		text += "[dimgray]──────────────────────[-:-:-]\n"
 
@@ -121,6 +188,37 @@ func (p *GameInfoPanel) refresh() {
 	}
 
 	p.box.SetText(text)
+}
+
+// parsePlanMoveForPanel extracts color, x, y from an SGF move string like ";B[pd]".
+func parsePlanMoveForPanel(move string) (color, x, y int) {
+	if len(move) < 3 {
+		return 0, -1, -1
+	}
+	color = 1
+	if move[1] == 'W' {
+		color = 2
+	}
+	start := -1
+	end := -1
+	for i, ch := range move {
+		if ch == '[' {
+			start = i + 1
+		} else if ch == ']' {
+			end = i
+			break
+		}
+	}
+	if start == -1 || end == -1 || end <= start {
+		return color, -1, -1
+	}
+	coord := move[start:end]
+	if len(coord) != 2 {
+		return color, -1, -1
+	}
+	x = int(coord[0] - 'a')
+	y = int(coord[1] - 'a')
+	return color, x, y
 }
 
 // CreateGameLayout creates the main game layout with board and side panel.
