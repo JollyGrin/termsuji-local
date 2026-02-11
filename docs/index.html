@@ -12,7 +12,7 @@
     />
     <meta
       name="description"
-      content="Play the ancient strategy board game Go (Baduk/Weiqi) in your terminal against GnuGo AI. Beautiful TUI, customizable board color, offline play, configurable difficulty. Free and open source."
+      content="Play Go (Baduk/Weiqi) in your terminal against GnuGo AI. Beautiful TUI, customizable board color, offline play, configurable difficulty. Open source."
     />
     <meta
       name="keywords"
@@ -21,6 +21,7 @@
     <meta name="author" content="termsuji-local contributors" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://jollygrin.github.io/termsuji-local/" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚫</text></svg>">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -110,6 +111,47 @@
           "@type": "SoftwareApplication",
           "name": "termsuji-local"
         }
+      }
+    </script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is GnuGo?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "GnuGo is a free, open-source Go-playing program developed by the GNU Project. It provides a reliable AI opponent for practice and uses the GTP (Go Text Protocol) to communicate with interfaces like termsuji-local."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How strong is the AI?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "GnuGo plays at approximately 5-8 kyu level (intermediate amateur). It's excellent for beginners and intermediate players. For stronger AI opponents, consider using KataGo with a GTP-compatible interface."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I play online against other humans?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "termsuji-local is designed for offline play against AI. For online play against humans, check out the original termsuji project which connects to online-go.com."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What terminal should I use?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Any modern terminal works: Terminal.app (macOS), iTerm2, Windows Terminal, GNOME Terminal, Konsole, Alacritty, Kitty, etc. For the best experience, use a terminal that supports Unicode and 256 colors."
+            }
+          }
+        ]
       }
     </script>
 

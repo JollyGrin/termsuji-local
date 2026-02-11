@@ -4,7 +4,7 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://grins.github.io/termsuji-local/sitemap.xml
+Sitemap: https://jollygrin.github.io/termsuji-local/sitemap.xml
 
 # AI Crawlers - explicitly allowed
 User-agent: GPTBot
