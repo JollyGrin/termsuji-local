@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.2.0] - 2026-02-11
+
+- update the menu ux and hotkeys to easily jump in
+
 ## [v0.1.1] - 2026-02-10
 
 - Woops, need to fix the install location. Doi
