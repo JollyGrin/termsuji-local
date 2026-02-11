@@ -15,6 +15,9 @@ termsuji-local currently has no game persistence. Every game is lost when you qu
 | 3. Mid-Game Recording Toggle | **COMPLETE** | `r` key toggles recording, AB/AW setup for mid-game start |
 | 4. SGF Reader Module | **COMPLETE** | 11 reader tests + 12 writer tests = 23 total. Capture logic verified. |
 | 5. History Browser Screen | **COMPLETE** | List + preview layout, delete support, HISTORY button on setup |
+| 6A. Undo + Move History Panel | **COMPLETE** | Engine undo via GTP, move list in right panel, `u` keybinding, 25 tests |
+| 6B. Full Variation Support | PLANNED | SGF tree nodes, branching, Left/Right navigation |
+| 6C. Visual Move Tree | PLANNED | Tree rendering in right panel, Up/Down variation switching |
 
 ### Findings & Learnings
 
@@ -25,6 +28,10 @@ termsuji-local currently has no game persistence. Every game is lost when you qu
 - History browser uses `·` for empty intersections (lighter than `.`), `●`/`○` for stones
 - Omitted save-as (`s` key) from Phase 5 to keep scope minimal; can be added later
 - HISTORY button placed between (P)LAY and COLORS in the button row; focus indices updated accordingly
+- GTP protocol supports `undo` command natively -- GnuGo can undo one move at a time
+- SGF branching uses nested `(...)` parentheses: first branch = main line, siblings = variations
+- Standard SGF editors (Sabaki, KGS): Left/Right = back/forward, Up/Down = switch variation
+- Sabaki design insight: Left then Right must be invertible (return to where you were)
 
 ---
 
@@ -248,3 +255,116 @@ After each phase:
 - **No external SGF library**: the subset we use (linear games, no branches) is trivial to write/parse in ~300 lines total
 - **Capture logic in reader**: ~40 lines of flood-fill liberty checking, needed for accurate board thumbnails
 - **1 char per cell thumbnails**: `.` for empty, `●`/`○` for stones -- fits 19x19 comfortably in the preview pane
+
+---
+
+## Phase 6A: Undo + Move History Panel
+
+Adds undo capability and a scrolling move list in the right panel. No branching yet -- undo truncates history and you continue on a single line. Foundation for Phase 6B (variations).
+
+### Engine: Add `Undo()` to GTP interface
+
+**Modify `engine/engine.go`** -- add to `GameEngine` interface:
+```go
+Undo() error  // Undo last move (one ply). Call twice to undo a move pair.
+```
+
+**Modify `engine/gtp/gtp.go`** -- implement `Undo()`:
+- Sends GTP `undo` command to GnuGo (natively supported)
+- Decrements `boardState.MoveNumber`
+- Calls `updateBoardFromGnuGo()` to resync board
+- Updates `myTurn` flag
+- Returns error if no moves to undo or game is over
+
+### Move history tracking
+
+**Modify `ui/goboard.go`** -- add `moveHistory` to `GoBoardUI`:
+```go
+type MoveEntry struct {
+    X, Y  int  // -1,-1 for pass
+    Color int  // 1=black, 2=white
+}
+
+moveHistory []MoveEntry
+```
+
+- Populated in the existing `OnMove` callback (append each move)
+- Cleared on new game (`ConnectEngine`)
+- Truncated on undo
+
+### Right panel: move list display
+
+**Modify `ui/gamepanel.go`** -- extend `GameInfoPanel` to show move history:
+- Below existing "Game Info" section, add scrolling move list
+- Format: `1. B D4` / `2. W Q16` / `3. B P3` ...
+- Passes shown as `4. W pass`
+- Current move (latest) highlighted with `>`
+- Auto-scroll to bottom as moves come in
+- Panel respects existing width (26 chars fixed)
+
+Coordinate display uses GTP format (A-T skipping I, rows from bottom) to match the board coordinate labels. Exposed via a new `PosToGTPDisplay(x, y, boardSize)` helper in a shared location.
+
+### Undo interaction
+
+**Modify `ui/goboard.go`** -- add `UndoMove()`:
+- Guards: not finished, engine exists, is my turn, moveHistory has >= 2 entries
+- Calls `eng.Undo()` twice (undo engine's response + your move)
+- Truncates last 2 entries from `moveHistory`
+- Truncates last 2 moves from SGF recorder via new `UndoMoves(n)` method
+- Refreshes hint and board display
+
+**Modify `sgf/writer.go`** -- add `UndoMoves(n int)`:
+```go
+func (r *GameRecord) UndoMoves(n int) error {
+    if n > len(r.moves) { n = len(r.moves) }
+    r.moves = r.moves[:len(r.moves)-n]
+    return r.flush()
+}
+```
+
+### Keybinding
+
+**Modify `main.go`** -- add `'u'` in game input handler:
+```go
+case 'u':
+    gameBoard.UndoMove()
+```
+
+**Modify `refreshHint()`** -- add `u` to controls:
+```
+[dimgray]u[-] undo
+```
+
+### Hidden in focus mode
+
+The move list is part of the right info panel, which is already hidden when `focusMode` is true (panel is removed in `BuildFocusLayout()`). No extra work needed.
+
+### Files Summary (Phase 6A)
+
+| File | Action |
+|------|--------|
+| `engine/engine.go` | Modify -- add `Undo()` to interface |
+| `engine/gtp/gtp.go` | Modify -- implement `Undo()` |
+| `sgf/writer.go` | Modify -- add `UndoMoves(n)` |
+| `ui/goboard.go` | Modify -- add `moveHistory`, `MoveEntry`, `UndoMove()` |
+| `ui/gamepanel.go` | Modify -- extend panel with move list |
+| `main.go` | Modify -- add `'u'` keybinding |
+
+### Verification (Phase 6A)
+
+- Play a few moves, verify move list appears in right panel with correct coordinates
+- Press `u` -- last move pair disappears, board rewinds, it's your turn again
+- Play a different move -- game continues normally from the new position
+- SGF file reflects the truncated history + new continuation
+- Focus mode hides the move list panel as before
+- Undo at move 0 is a no-op (no crash)
+
+---
+
+## Phase 6B: Full Variation Support (planned)
+
+Replace flat `moves []string` with tree node structure. When undoing and playing differently, create a branch instead of truncating. SGF file contains nested `(...)` variation trees. Left/Right keys navigate forward/back through history with board preview.
+
+## Phase 6C: Visual Move Tree (planned)
+
+Render the SGF game tree graphically in the right panel. Main line horizontal, variations branch downward. Current node highlighted. Up/Down keys switch between sibling variations at branch points.

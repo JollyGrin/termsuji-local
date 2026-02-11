@@ -13,6 +13,12 @@ import (
 	"termsuji-local/types"
 )
 
+// MoveEntry records a single move for the history panel.
+type MoveEntry struct {
+	X, Y  int // -1,-1 for pass
+	Color int // 1=black, 2=white
+}
+
 type GoBoardUI struct {
 	Box          *tview.Box
 	BoardState   *types.BoardState
@@ -29,6 +35,7 @@ type GoBoardUI struct {
 	focusMode    bool
 	recorder     *sgf.GameRecord
 	gameConfig   engine.GameConfig
+	moveHistory  []MoveEntry
 }
 
 // ToggleFocusMode toggles focus mode and returns the new state.
@@ -191,6 +198,7 @@ func NewGoBoard(app *tview.Application, c *config.Config, hint *tview.TextView) 
 func (g *GoBoardUI) ConnectEngine(e engine.GameEngine) error {
 	g.finished = false
 	g.eng = e
+	g.moveHistory = nil
 
 	if err := e.Connect(); err != nil {
 		return err
@@ -199,6 +207,7 @@ func (g *GoBoardUI) ConnectEngine(e engine.GameEngine) error {
 	e.OnMove(func(x, y, color int, boardState *types.BoardState) {
 		g.lastTurnPass = (x == -1 && y == -1)
 		g.BoardState = boardState
+		g.moveHistory = append(g.moveHistory, MoveEntry{X: x, Y: y, Color: color})
 		if g.recorder != nil {
 			g.recorder.AddMove(x, y, color)
 		}
@@ -278,6 +287,53 @@ func (g *GoBoardUI) SetRecorder(rec *sgf.GameRecord) {
 // SetGameConfig stores the game configuration for mid-game recording toggle.
 func (g *GoBoardUI) SetGameConfig(gc engine.GameConfig) {
 	g.gameConfig = gc
+}
+
+// UndoMove undoes the last player+engine move pair so it's the player's turn again.
+func (g *GoBoardUI) UndoMove() {
+	if g.finished || g.eng == nil {
+		return
+	}
+	if !g.eng.IsMyTurn() {
+		return
+	}
+	// Need at least 2 moves to undo (engine response + player move)
+	if len(g.moveHistory) < 2 {
+		return
+	}
+
+	// Undo engine's last response
+	if err := g.eng.Undo(); err != nil {
+		return
+	}
+	// Undo player's last move
+	if err := g.eng.Undo(); err != nil {
+		return
+	}
+
+	// Truncate move history
+	g.moveHistory = g.moveHistory[:len(g.moveHistory)-2]
+
+	// Truncate SGF recorder
+	if g.recorder != nil {
+		g.recorder.UndoMoves(2)
+	}
+
+	// Resync board state from engine
+	g.BoardState = g.eng.GetBoardState()
+	g.lastTurnPass = false
+
+	// Restore last move indicator from history
+	if len(g.moveHistory) > 0 {
+		last := g.moveHistory[len(g.moveHistory)-1]
+		g.BoardState.LastMove.X = last.X
+		g.BoardState.LastMove.Y = last.Y
+	}
+
+	g.refreshHint()
+	go func() {
+		g.app.QueueUpdateDraw(func() {})
+	}()
 }
 
 // ToggleRecording toggles SGF recording on or off.
@@ -368,7 +424,7 @@ func (g *GoBoardUI) refreshHint() {
 		} else {
 			status = "[dimgray]◌[-] Thinking..."
 		}
-		controls = "[dimgray]hjkl[-] move  [dimgray]⏎[-] play  [dimgray]p[-] pass  [dimgray]r[-] rec  [dimgray]f[-] focus  [dimgray]q[-] quit"
+		controls = "[dimgray]hjkl[-] move  [dimgray]⏎[-] play  [dimgray]p[-] pass  [dimgray]u[-] undo  [dimgray]r[-] rec  [dimgray]f[-] focus  [dimgray]q[-] quit"
 	}
 
 	// Prepend REC indicator when recording

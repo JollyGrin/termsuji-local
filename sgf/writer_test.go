@@ -306,6 +306,80 @@ func TestCloseIdempotent(t *testing.T) {
 	rec.Close() // Should not panic
 }
 
+func TestUndoMoves(t *testing.T) {
+	dir := t.TempDir()
+	rec, err := NewGameRecord(dir, 9, 6.5, 1, 5)
+	if err != nil {
+		t.Fatalf("NewGameRecord: %v", err)
+	}
+	defer rec.Close()
+
+	rec.AddMove(4, 4, 1) // B[ee]
+	rec.AddMove(2, 2, 2) // W[cc]
+	rec.AddMove(6, 6, 1) // B[gg]
+	rec.AddMove(2, 6, 2) // W[cg]
+
+	// Undo last 2 moves
+	if err := rec.UndoMoves(2); err != nil {
+		t.Fatalf("UndoMoves: %v", err)
+	}
+
+	content, _ := os.ReadFile(rec.FilePath)
+	s := string(content)
+
+	// Should still have first 2 moves
+	if !strings.Contains(s, ";B[ee]") {
+		t.Error("Should still have B[ee]")
+	}
+	if !strings.Contains(s, ";W[cc]") {
+		t.Error("Should still have W[cc]")
+	}
+
+	// Should NOT have the undone moves
+	if strings.Contains(s, ";B[gg]") {
+		t.Error("Should not have B[gg] after undo")
+	}
+	if strings.Contains(s, ";W[cg]") {
+		t.Error("Should not have W[cg] after undo")
+	}
+
+	// Can continue playing from the new position
+	rec.AddMove(3, 3, 1) // B[dd] - different move
+	content, _ = os.ReadFile(rec.FilePath)
+	s = string(content)
+	if !strings.Contains(s, ";B[dd]") {
+		t.Error("Should have new move B[dd]")
+	}
+}
+
+func TestUndoMovesAll(t *testing.T) {
+	dir := t.TempDir()
+	rec, err := NewGameRecord(dir, 9, 6.5, 1, 5)
+	if err != nil {
+		t.Fatalf("NewGameRecord: %v", err)
+	}
+	defer rec.Close()
+
+	rec.AddMove(4, 4, 1)
+	rec.AddMove(2, 2, 2)
+
+	// Undo more than available
+	if err := rec.UndoMoves(10); err != nil {
+		t.Fatalf("UndoMoves: %v", err)
+	}
+
+	content, _ := os.ReadFile(rec.FilePath)
+	s := string(content)
+
+	// Should have no moves
+	if strings.Contains(s, ";B[") {
+		t.Error("Should have no moves after undoing all")
+	}
+	if strings.Contains(s, ";W[") {
+		t.Error("Should have no moves after undoing all")
+	}
+}
+
 func TestCrashSafety(t *testing.T) {
 	dir := t.TempDir()
 	rec, err := NewGameRecord(dir, 9, 6.5, 1, 5)

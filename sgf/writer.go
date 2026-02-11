@@ -111,6 +111,15 @@ func (r *GameRecord) AddSetupPosition(board [][]int) error {
 	return r.flush()
 }
 
+// UndoMoves removes the last n moves from the record.
+func (r *GameRecord) UndoMoves(n int) error {
+	if n > len(r.moves) {
+		n = len(r.moves)
+	}
+	r.moves = r.moves[:len(r.moves)-n]
+	return r.flush()
+}
+
 // SetResult parses a game outcome string and sets the SGF RE property.
 // Accepts GnuGo output like "White wins by 5.5 points" or "Black wins by resign"
 // as well as already-formatted SGF like "W+5.5", "B+R".

@@ -28,6 +28,9 @@ type GameEngine interface {
 	// x, y are -1, -1 for a pass. boardState is passed directly to avoid lock contention.
 	OnMove(func(x, y, color int, boardState *types.BoardState))
 
+	// Undo undoes the last move (one ply). Call twice to undo a player+engine move pair.
+	Undo() error
+
 	// OnGameEnd registers a callback for when the game ends.
 	OnGameEnd(func(outcome string))
 

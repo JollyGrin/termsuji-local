@@ -156,6 +156,8 @@ func main() {
 				gameBoard.MoveSelection(1, 0)
 			case 'p':
 				gameBoard.Pass()
+			case 'u':
+				gameBoard.UndoMove()
 			case 'r':
 				gameBoard.ToggleRecording(cfg)
 			case 'f':

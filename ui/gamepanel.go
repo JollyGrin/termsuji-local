@@ -5,14 +5,17 @@ import (
 
 	"github.com/rivo/tview"
 
+	"termsuji-local/engine/gtp"
 	"termsuji-local/types"
 )
 
-// GameInfoPanel displays game information alongside the board.
+// GameInfoPanel displays game information and move history alongside the board.
 type GameInfoPanel struct {
-	box        *tview.TextView
-	boardState *types.BoardState
-	komi       float64
+	box         *tview.TextView
+	boardState  *types.BoardState
+	komi        float64
+	moveHistory *[]MoveEntry
+	boardSize   int
 }
 
 // NewGameInfoPanel creates a new game info panel.
@@ -46,6 +49,12 @@ func (p *GameInfoPanel) SetKomi(komi float64) {
 	p.refresh()
 }
 
+// SetMoveHistory sets a pointer to the move history slice and the board size for coordinate display.
+func (p *GameInfoPanel) SetMoveHistory(history *[]MoveEntry, boardSize int) {
+	p.moveHistory = history
+	p.boardSize = boardSize
+}
+
 // refresh updates the panel text.
 func (p *GameInfoPanel) refresh() {
 	if p.boardState == nil {
@@ -65,6 +74,52 @@ func (p *GameInfoPanel) refresh() {
 	// Move count
 	text += fmt.Sprintf("[white]Move:[-:-:-] %d\n", p.boardState.MoveNumber)
 
+	// Move history
+	if p.moveHistory != nil && len(*p.moveHistory) > 0 {
+		text += "\n[white::b]Moves[-:-:-]\n"
+		text += "[dimgray]──────────────────────[-:-:-]\n"
+
+		moves := *p.moveHistory
+		// Show last N moves that fit, with scroll
+		maxVisible := 12
+		start := 0
+		if len(moves) > maxVisible {
+			start = len(moves) - maxVisible
+		}
+
+		for i := start; i < len(moves); i++ {
+			m := moves[i]
+			moveNum := i + 1
+
+			colorStr := "[white]B[-]"
+			if m.Color == 2 {
+				colorStr = "[dimgray]W[-]"
+			}
+
+			coord := "pass"
+			if m.X >= 0 && m.Y >= 0 {
+				size := p.boardSize
+				if p.boardState != nil && p.boardState.Width() > 0 {
+					size = p.boardState.Width()
+				}
+				if size > 0 {
+					coord = gtp.PosToGTPDisplay(m.X, m.Y, size)
+				}
+			}
+
+			marker := " "
+			if i == len(moves)-1 {
+				marker = "[white]>[-]"
+			}
+
+			text += fmt.Sprintf("%s[dimgray]%3d.[-] %s %s\n", marker, moveNum, colorStr, coord)
+		}
+
+		if start > 0 {
+			text += fmt.Sprintf("[dimgray]  ··· %d earlier[-]\n", start)
+		}
+	}
+
 	p.box.SetText(text)
 }
 
@@ -75,6 +130,7 @@ func CreateGameLayout(board *GoBoardUI, hint *tview.TextView) *tview.Flex {
 
 	// Store panel reference in board for updates
 	board.infoPanel = infoPanel
+	infoPanel.SetMoveHistory(&board.moveHistory, board.gameConfig.BoardSize)
 
 	// Create horizontal flex: board | info panel
 	boardRow := tview.NewFlex().SetDirection(tview.FlexColumn)
@@ -108,6 +164,7 @@ func RebuildNormalLayout(gameFrame *tview.Flex, board *GoBoardUI, hint *tview.Te
 
 	// Store panel reference in board for updates
 	board.infoPanel = infoPanel
+	infoPanel.SetMoveHistory(&board.moveHistory, board.gameConfig.BoardSize)
 
 	// Refresh the info panel with current state
 	if board.BoardState != nil {

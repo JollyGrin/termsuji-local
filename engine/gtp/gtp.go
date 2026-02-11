@@ -416,6 +416,44 @@ func (g *GTPEngine) handleGameEnd() {
 	}
 }
 
+// Undo undoes the last move (one ply) in GnuGo.
+func (g *GTPEngine) Undo() error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	if g.gameOver {
+		return fmt.Errorf("game is over")
+	}
+	if g.boardState.MoveNumber == 0 {
+		return fmt.Errorf("no moves to undo")
+	}
+
+	if _, err := g.sendCommand("undo"); err != nil {
+		return fmt.Errorf("undo failed: %w", err)
+	}
+
+	g.boardState.MoveNumber--
+	g.passCount = 0
+
+	// Resync board from GnuGo
+	g.updateBoardFromGnuGo()
+
+	// Toggle whose turn it is
+	if g.boardState.PlayerToMove == g.playerColor {
+		g.boardState.PlayerToMove = oppositeColor(g.playerColor)
+		g.myTurn = false
+	} else {
+		g.boardState.PlayerToMove = g.playerColor
+		g.myTurn = true
+	}
+
+	// Clear last move indicator (we don't know the previous last move)
+	g.boardState.LastMove.X = -1
+	g.boardState.LastMove.Y = -1
+
+	return nil
+}
+
 // IsMyTurn returns true if it's the human player's turn.
 func (g *GTPEngine) IsMyTurn() bool {
 	debugLog.Printf("IsMyTurn: trying to acquire lock")
