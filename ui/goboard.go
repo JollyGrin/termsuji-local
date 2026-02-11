@@ -796,7 +796,7 @@ func (g *GoBoardUI) refreshHint() {
 			varInfo = fmt.Sprintf("  [dimgray]var %d/%d[-]", g.planTree.VariationIndex()+1, g.planTree.NumVariations())
 		}
 		status = fmt.Sprintf("[yellow]PLAN[-] %s %s%s", stone, colorName, varInfo)
-		controls = "[dimgray][ ][-] nav  [dimgray]{ }[-] var  [dimgray]a[-] exit  [dimgray]A[-] resume"
+		controls = "[dimgray]⏎[-] play  [dimgray]p[-] pass  [dimgray][ ][-] nav  [dimgray]{ }[-] branch  [dimgray]a[-] exit  [dimgray]A[-] resume"
 	} else if g.finished {
 		// Game over state
 		status = fmt.Sprintf("[::b]Game Complete[::-]  %s", g.BoardState.Outcome)
@@ -818,7 +818,7 @@ func (g *GoBoardUI) refreshHint() {
 		} else {
 			status = "[dimgray]◌[-] Thinking..."
 		}
-		controls = "[dimgray]hjkl[-] move  [dimgray]⏎[-] play  [dimgray]p[-] pass  [dimgray]u[-] undo  [dimgray]r[-] rec  [dimgray]f[-] focus  [dimgray]q[-] quit"
+		controls = "[dimgray]hjkl[-] move  [dimgray]⏎[-] play  [dimgray]p[-] pass  [dimgray]u[-] undo  [dimgray]r[-] rec  [dimgray]a[-] plan  [dimgray]f[-] focus  [dimgray]q[-] quit"
 	}
 
 	// Prepend REC indicator when recording
