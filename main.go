@@ -166,6 +166,26 @@ func main() {
 				} else {
 					ui.RebuildNormalLayout(gameFrame, gameBoard, gameHint)
 				}
+			case 'a':
+				gameBoard.TogglePlanningMode()
+			case 'A':
+				gameBoard.ResumeFromPlan()
+			case '[':
+				if gameBoard.IsPlanningMode() {
+					gameBoard.PlanBack()
+				}
+			case ']':
+				if gameBoard.IsPlanningMode() {
+					gameBoard.PlanForward()
+				}
+			case '{':
+				if gameBoard.IsPlanningMode() {
+					gameBoard.PlanPrevVariation()
+				}
+			case '}':
+				if gameBoard.IsPlanningMode() {
+					gameBoard.PlanNextVariation()
+				}
 			}
 		}
 		return event

@@ -494,6 +494,63 @@ func (g *GTPEngine) Undo() error {
 	return nil
 }
 
+// ResetAndReplay clears the board and replays the given moves.
+// Each move is [3]int{color, x, y} where color is 1=black/2=white, and x=-1,y=-1 means pass.
+func (g *GTPEngine) ResetAndReplay(moves [][3]int) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	if _, err := g.sendCommand("clear_board"); err != nil {
+		return fmt.Errorf("clear_board failed: %w", err)
+	}
+
+	for _, m := range moves {
+		color := colorToGTP(m[0])
+		if m[1] == -1 && m[2] == -1 {
+			if _, err := g.sendCommand(fmt.Sprintf("play %s pass", color)); err != nil {
+				return fmt.Errorf("replay pass failed: %w", err)
+			}
+		} else {
+			vertex := posToGTP(m[1], m[2], g.config.BoardSize)
+			if _, err := g.sendCommand(fmt.Sprintf("play %s %s", color, vertex)); err != nil {
+				return fmt.Errorf("replay move failed: %w", err)
+			}
+		}
+	}
+
+	g.updateBoardFromGnuGo()
+	g.boardState.MoveNumber = len(moves)
+	g.passCount = 0
+	g.gameOver = false
+	g.boardState.Phase = "playing"
+
+	// Determine whose turn it is
+	if len(moves) > 0 {
+		lastColor := moves[len(moves)-1][0]
+		g.boardState.PlayerToMove = oppositeColor(lastColor)
+	} else {
+		g.boardState.PlayerToMove = 1 // black plays first
+	}
+
+	if g.boardState.PlayerToMove == g.playerColor {
+		g.myTurn = true
+	} else {
+		g.myTurn = false
+	}
+
+	// Set last move indicator
+	if len(moves) > 0 {
+		last := moves[len(moves)-1]
+		g.boardState.LastMove.X = last[1]
+		g.boardState.LastMove.Y = last[2]
+	} else {
+		g.boardState.LastMove.X = -1
+		g.boardState.LastMove.Y = -1
+	}
+
+	return nil
+}
+
 // IsMyTurn returns true if it's the human player's turn.
 func (g *GTPEngine) IsMyTurn() bool {
 	debugLog.Printf("IsMyTurn: trying to acquire lock")

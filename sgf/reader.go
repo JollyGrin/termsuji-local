@@ -78,7 +78,7 @@ func ReplayToEnd(filePath string) ([][]int, int, error) {
 		}
 	}
 
-	board := makeBoard(boardSize)
+	board := MakeBoard(boardSize)
 	moveCount := 0
 
 	// Apply setup positions (AB/AW)
@@ -99,14 +99,14 @@ func ReplayToEnd(filePath string) ([][]int, int, error) {
 			continue
 		}
 		board[y][x] = color
-		removeCaptures(board, boardSize, x, y, color)
+		RemoveCaptures(board, boardSize, x, y, color)
 	}
 
 	return board, moveCount, nil
 }
 
-// makeBoard creates an empty boardSize x boardSize board.
-func makeBoard(size int) [][]int {
+// MakeBoard creates an empty boardSize x boardSize board.
+func MakeBoard(size int) [][]int {
 	board := make([][]int, size)
 	for i := range board {
 		board[i] = make([]int, size)
@@ -341,8 +341,8 @@ func applySetup(content string, board [][]int, boardSize int) {
 	}
 }
 
-// removeCaptures checks and removes any opponent groups adjacent to (x, y) that have zero liberties.
-func removeCaptures(board [][]int, size, x, y, color int) {
+// RemoveCaptures checks and removes any opponent groups adjacent to (x, y) that have zero liberties.
+func RemoveCaptures(board [][]int, size, x, y, color int) {
 	opponent := 1
 	if color == 1 {
 		opponent = 2
@@ -360,6 +360,12 @@ func removeCaptures(board [][]int, size, x, y, color int) {
 			}
 		}
 	}
+}
+
+// HasLiberty checks if the group at (x, y) has any liberties using flood fill.
+// Exported for use by planning mode's suicide detection.
+func HasLiberty(board [][]int, size, x, y, color int) bool {
+	return hasLiberties(board, size, x, y, color)
 }
 
 // hasLiberties checks if the group at (x, y) has any liberties using flood fill.

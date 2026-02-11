@@ -36,6 +36,15 @@ type GoBoardUI struct {
 	recorder     *sgf.GameRecord
 	gameConfig   engine.GameConfig
 	moveHistory  []MoveEntry
+
+	// Planning mode state
+	planningMode   bool
+	planTree       *sgf.GameTree
+	planBoard      [][]int           // local board for planning (board[y][x])
+	planColor      int               // next color to play (alternates)
+	planLastMove   [2]int            // last move in planning for highlight (-1,-1 if none)
+	prePlanBoard   *types.BoardState // snapshot to restore when exiting
+	prePlanHistory []MoveEntry       // snapshot of move history
 }
 
 // ToggleFocusMode toggles focus mode and returns the new state.
@@ -64,14 +73,19 @@ func (g *GoBoardUI) SelectedTile() *types.BoardPos {
 }
 
 func (g *GoBoardUI) MoveSelection(h, v int) {
-	if g.BoardState.Finished() {
+	if !g.planningMode && g.BoardState.Finished() {
 		g.ResetSelection()
 		return
 	}
 	prevTile := g.SelectedTile()
 	if prevTile == nil {
-		g.selX = g.BoardState.LastMove.X
-		g.selY = g.BoardState.LastMove.Y
+		if g.planningMode {
+			g.selX = g.planLastMove[0]
+			g.selY = g.planLastMove[1]
+		} else {
+			g.selX = g.BoardState.LastMove.X
+			g.selY = g.BoardState.LastMove.Y
+		}
 		if g.SelectedTile() == nil {
 			// No previous move made, use board center
 			g.selX = int(g.BoardState.Width() / 2)
@@ -111,9 +125,17 @@ func NewGoBoard(app *tview.Application, c *config.Config, hint *tview.TextView) 
 		// 2 characters per cell for square appearance
 		boardW, boardH := goBoard.BoardState.Width()*2, goBoard.BoardState.Height()
 
+		// Choose board data and last-move indicator based on planning mode
+		boardData := goBoard.BoardState.Board
+		lastMoveX, lastMoveY := goBoard.BoardState.LastMove.X, goBoard.BoardState.LastMove.Y
+		if goBoard.planningMode && goBoard.planBoard != nil {
+			boardData = goBoard.planBoard
+			lastMoveX, lastMoveY = goBoard.planLastMove[0], goBoard.planLastMove[1]
+		}
+
 		for boardY := 0; boardY < goBoard.BoardState.Height(); boardY++ {
 			for boardX := 0; boardX < goBoard.BoardState.Width(); boardX++ {
-				stone := goBoard.BoardState.Board[boardY][boardX]
+				stone := boardData[boardY][boardX]
 				i := stone
 				if !goBoard.cfg.Theme.DrawStoneBackground {
 					i = 0
@@ -165,7 +187,7 @@ func NewGoBoard(app *tview.Application, c *config.Config, hint *tview.TextView) 
 						drawRune = goBoard.cfg.Theme.Symbols.Cursor
 					}
 					// For grid lines theme, keep the grid character but cursor background will highlight
-				} else if boardX == goBoard.BoardState.LastMove.X && boardY == goBoard.BoardState.LastMove.Y {
+				} else if boardX == lastMoveX && boardY == lastMoveY {
 					if goBoard.cfg.Theme.DrawLastPlayedBackground {
 						i = 7
 					} else if !goBoard.cfg.Theme.UseGridLines {
@@ -177,7 +199,7 @@ func NewGoBoard(app *tview.Application, c *config.Config, hint *tview.TextView) 
 					// Check if there's a stone to the right (no line should connect to it)
 					hasStoneRight := false
 					if boardX < goBoard.BoardState.Width()-1 {
-						hasStoneRight = goBoard.BoardState.Board[boardY][boardX+1] > 0
+						hasStoneRight = boardData[boardY][boardX+1] > 0
 					}
 					// Empty intersection with grid lines - draw grid character + connectors
 					drawGridCell(screen, tcell.StyleDefault.Background(goBoard.styles[i]).Foreground(fgColor), drawRune, boardX, boardY, x+4, y, goBoard.BoardState.Width(), hasStoneRight)
@@ -238,6 +260,10 @@ func (g *GoBoardUI) ConnectEngine(e engine.GameEngine) error {
 
 // PlayMove plays a move at the given coordinates.
 func (g *GoBoardUI) PlayMove(x, y int) {
+	if g.planningMode {
+		g.PlanPlayMove(x, y)
+		return
+	}
 	if g.finished {
 		return
 	}
@@ -255,6 +281,10 @@ func (g *GoBoardUI) PlayMove(x, y int) {
 
 // Pass passes the current turn.
 func (g *GoBoardUI) Pass() {
+	if g.planningMode {
+		g.planPass()
+		return
+	}
 	if g.finished {
 		return
 	}
@@ -344,6 +374,343 @@ func (g *GoBoardUI) UndoMove() {
 	}()
 }
 
+// IsPlanningMode returns true if planning mode is active.
+func (g *GoBoardUI) IsPlanningMode() bool {
+	return g.planningMode
+}
+
+// TogglePlanningMode enters or exits planning mode.
+// When entering: snapshots board state and move history, creates a new game tree.
+// When exiting: restores the pre-plan state, discards the tree.
+func (g *GoBoardUI) TogglePlanningMode() {
+	if g.planningMode {
+		// Exit planning mode - restore pre-plan state
+		g.BoardState = g.prePlanBoard
+		g.moveHistory = g.prePlanHistory
+		g.planningMode = false
+		g.planTree = nil
+		g.planBoard = nil
+		g.prePlanBoard = nil
+		g.prePlanHistory = nil
+	} else {
+		if g.finished || g.BoardState == nil {
+			return
+		}
+		// Enter planning mode - snapshot current state
+		g.prePlanBoard = g.copyBoardState()
+		g.prePlanHistory = make([]MoveEntry, len(g.moveHistory))
+		copy(g.prePlanHistory, g.moveHistory)
+
+		// Initialize plan board from current board
+		size := g.BoardState.Width()
+		g.planBoard = sgf.MakeBoard(size)
+		for y := 0; y < size; y++ {
+			copy(g.planBoard[y], g.BoardState.Board[y])
+		}
+
+		// Set next color to play
+		if g.eng != nil {
+			if g.eng.IsMyTurn() {
+				g.planColor = g.eng.GetPlayerColor()
+			} else {
+				g.planColor = oppositeColor(g.eng.GetPlayerColor())
+			}
+		} else {
+			g.planColor = g.BoardState.PlayerToMove
+		}
+
+		g.planLastMove = [2]int{g.BoardState.LastMove.X, g.BoardState.LastMove.Y}
+		g.planTree = sgf.NewGameTree()
+		g.planningMode = true
+	}
+	g.refreshHint()
+	go func() {
+		g.app.QueueUpdateDraw(func() {})
+	}()
+}
+
+// PlanPlayMove places a stone locally during planning mode.
+func (g *GoBoardUI) PlanPlayMove(x, y int) {
+	if !g.planningMode || g.planBoard == nil {
+		return
+	}
+	size := g.BoardState.Width()
+	if x < 0 || x >= size || y < 0 || y >= size {
+		return
+	}
+	// Must be empty intersection
+	if g.planBoard[y][x] != 0 {
+		return
+	}
+
+	// Place stone and handle captures
+	g.planBoard[y][x] = g.planColor
+	sgf.RemoveCaptures(g.planBoard, size, x, y, g.planColor)
+
+	// Check for suicide: if the placed stone's group has no liberties after captures
+	if !sgf.HasLiberty(g.planBoard, size, x, y, g.planColor) {
+		g.planBoard[y][x] = 0 // undo the placement
+		return
+	}
+
+	// Build SGF move string
+	colorChar := "B"
+	if g.planColor == 2 {
+		colorChar = "W"
+	}
+	coord := string(rune('a'+x)) + string(rune('a'+y))
+	move := fmt.Sprintf(";%s[%s]", colorChar, coord)
+
+	g.planTree.AddMove(move)
+	g.planLastMove = [2]int{x, y}
+	g.planColor = oppositeColor(g.planColor)
+	g.refreshHint()
+	go func() {
+		g.app.QueueUpdateDraw(func() {})
+	}()
+}
+
+// planPass adds a pass node in planning mode.
+func (g *GoBoardUI) planPass() {
+	if !g.planningMode {
+		return
+	}
+	colorChar := "B"
+	if g.planColor == 2 {
+		colorChar = "W"
+	}
+	move := fmt.Sprintf(";%s[]", colorChar)
+	g.planTree.AddMove(move)
+	g.planLastMove = [2]int{-1, -1}
+	g.planColor = oppositeColor(g.planColor)
+	g.refreshHint()
+	go func() {
+		g.app.QueueUpdateDraw(func() {})
+	}()
+}
+
+// PlanBack navigates one move back in the planning tree.
+func (g *GoBoardUI) PlanBack() {
+	if !g.planningMode || g.planTree == nil {
+		return
+	}
+	if !g.planTree.Back() {
+		return
+	}
+	g.rebuildPlanBoard()
+	g.refreshHint()
+	go func() {
+		g.app.QueueUpdateDraw(func() {})
+	}()
+}
+
+// PlanForward navigates one move forward (follows first variation).
+func (g *GoBoardUI) PlanForward() {
+	if !g.planningMode || g.planTree == nil {
+		return
+	}
+	if !g.planTree.Forward(0) {
+		return
+	}
+	g.rebuildPlanBoard()
+	g.refreshHint()
+	go func() {
+		g.app.QueueUpdateDraw(func() {})
+	}()
+}
+
+// PlanNextVariation switches to the next sibling variation.
+func (g *GoBoardUI) PlanNextVariation() {
+	if !g.planningMode || g.planTree == nil {
+		return
+	}
+	if !g.planTree.NextVariation() {
+		return
+	}
+	g.rebuildPlanBoard()
+	g.refreshHint()
+	go func() {
+		g.app.QueueUpdateDraw(func() {})
+	}()
+}
+
+// PlanPrevVariation switches to the previous sibling variation.
+func (g *GoBoardUI) PlanPrevVariation() {
+	if !g.planningMode || g.planTree == nil {
+		return
+	}
+	if !g.planTree.PrevVariation() {
+		return
+	}
+	g.rebuildPlanBoard()
+	g.refreshHint()
+	go func() {
+		g.app.QueueUpdateDraw(func() {})
+	}()
+}
+
+// ResumeFromPlan takes the planning path and replays it on the engine, then exits planning mode.
+func (g *GoBoardUI) ResumeFromPlan() {
+	if !g.planningMode || g.planTree == nil || g.eng == nil {
+		return
+	}
+
+	planPath := g.planTree.PathFromRoot()
+	if len(planPath) == 0 {
+		// Nothing explored, just exit
+		g.TogglePlanningMode()
+		return
+	}
+
+	// Build combined move sequence: pre-plan history + planning path
+	var allMoves [][3]int
+	for _, m := range g.prePlanHistory {
+		allMoves = append(allMoves, [3]int{m.Color, m.X, m.Y})
+	}
+	for _, moveStr := range planPath {
+		color, x, y := parsePlanMove(moveStr)
+		allMoves = append(allMoves, [3]int{color, x, y})
+	}
+
+	// Reset engine and replay all moves
+	if err := g.eng.ResetAndReplay(allMoves); err != nil {
+		// Failed to resume, just exit planning
+		g.TogglePlanningMode()
+		return
+	}
+
+	// Update move history
+	g.moveHistory = nil
+	for _, m := range allMoves {
+		g.moveHistory = append(g.moveHistory, MoveEntry{X: m[1], Y: m[2], Color: m[0]})
+	}
+
+	// Update SGF recorder
+	if g.recorder != nil {
+		g.recorder.UndoMoves(len(g.prePlanHistory))
+		for _, m := range allMoves {
+			g.recorder.AddMove(m[1], m[2], m[0])
+		}
+	}
+
+	// Sync board state from engine
+	g.BoardState = g.eng.GetBoardState()
+
+	// Exit planning mode without restoring snapshot
+	g.planningMode = false
+	g.planTree = nil
+	g.planBoard = nil
+	g.prePlanBoard = nil
+	g.prePlanHistory = nil
+
+	g.refreshHint()
+	go func() {
+		g.app.QueueUpdateDraw(func() {})
+	}()
+}
+
+// rebuildPlanBoard replays the planning tree path on the pre-plan board snapshot.
+func (g *GoBoardUI) rebuildPlanBoard() {
+	size := g.BoardState.Width()
+	// Start from pre-plan board snapshot
+	g.planBoard = sgf.MakeBoard(size)
+	for y := 0; y < size; y++ {
+		copy(g.planBoard[y], g.prePlanBoard.Board[y])
+	}
+
+	// Determine starting color from pre-plan state
+	startColor := g.prePlanBoard.PlayerToMove
+
+	// Replay path from root
+	path := g.planTree.PathFromRoot()
+	g.planLastMove = [2]int{g.prePlanBoard.LastMove.X, g.prePlanBoard.LastMove.Y}
+	currentColor := startColor
+
+	for _, moveStr := range path {
+		color, x, y := parsePlanMove(moveStr)
+		if color != 0 {
+			currentColor = oppositeColor(color)
+		}
+		if x >= 0 && y >= 0 && x < size && y < size {
+			g.planBoard[y][x] = color
+			sgf.RemoveCaptures(g.planBoard, size, x, y, color)
+			g.planLastMove = [2]int{x, y}
+		} else {
+			// pass
+			g.planLastMove = [2]int{-1, -1}
+		}
+	}
+
+	if len(path) > 0 {
+		lastColor, _, _ := parsePlanMove(path[len(path)-1])
+		g.planColor = oppositeColor(lastColor)
+	} else {
+		g.planColor = currentColor
+	}
+}
+
+// copyBoardState creates a deep copy of the current board state.
+func (g *GoBoardUI) copyBoardState() *types.BoardState {
+	if g.BoardState == nil {
+		return nil
+	}
+	size := g.BoardState.Width()
+	boardCopy := make([][]int, size)
+	for i := range boardCopy {
+		boardCopy[i] = make([]int, size)
+		copy(boardCopy[i], g.BoardState.Board[i])
+	}
+	return &types.BoardState{
+		MoveNumber:   g.BoardState.MoveNumber,
+		PlayerToMove: g.BoardState.PlayerToMove,
+		Phase:        g.BoardState.Phase,
+		Board:        boardCopy,
+		Outcome:      g.BoardState.Outcome,
+		LastMove:     g.BoardState.LastMove,
+	}
+}
+
+// parsePlanMove extracts color, x, y from an SGF move string like ";B[pd]" or ";W[]".
+func parsePlanMove(move string) (color, x, y int) {
+	if len(move) < 3 {
+		return 0, -1, -1
+	}
+	color = 1
+	if move[1] == 'W' {
+		color = 2
+	}
+	// Find coordinates in brackets
+	start := -1
+	end := -1
+	for i, ch := range move {
+		if ch == '[' {
+			start = i + 1
+		} else if ch == ']' {
+			end = i
+			break
+		}
+	}
+	if start == -1 || end == -1 || end <= start {
+		// Pass
+		return color, -1, -1
+	}
+	coord := move[start:end]
+	if len(coord) != 2 {
+		return color, -1, -1
+	}
+	x = int(coord[0] - 'a')
+	y = int(coord[1] - 'a')
+	return color, x, y
+}
+
+// oppositeColor returns the opposite color (1->2, 2->1).
+func oppositeColor(color int) int {
+	if color == 1 {
+		return 2
+	}
+	return 1
+}
+
 // ToggleRecording toggles SGF recording on or off.
 // When toggling on mid-game, captures the current board position via AB[]/AW[].
 func (g *GoBoardUI) ToggleRecording(cfg *config.Config) {
@@ -394,6 +761,11 @@ func (g *GoBoardUI) SetKomi(komi float64) {
 func (g *GoBoardUI) refreshHint() {
 	// Update info panel if available
 	if g.infoPanel != nil {
+		if g.planningMode && g.planTree != nil {
+			g.infoPanel.SetPlanningMode(g.planTree)
+		} else {
+			g.infoPanel.ClearPlanningMode()
+		}
 		g.infoPanel.SetBoardState(g.BoardState)
 	}
 
@@ -411,7 +783,21 @@ func (g *GoBoardUI) refreshHint() {
 
 	var status, controls string
 
-	if g.finished {
+	if g.planningMode {
+		// Planning mode state
+		stone := "●"
+		colorName := "Black"
+		if g.planColor == 2 {
+			stone = "○"
+			colorName = "White"
+		}
+		varInfo := ""
+		if g.planTree != nil && g.planTree.NumVariations() > 1 {
+			varInfo = fmt.Sprintf("  [dimgray]var %d/%d[-]", g.planTree.VariationIndex()+1, g.planTree.NumVariations())
+		}
+		status = fmt.Sprintf("[yellow]PLAN[-] %s %s%s", stone, colorName, varInfo)
+		controls = "[dimgray]⏎[-] play  [dimgray]p[-] pass  [dimgray][ ][-] nav  [dimgray]{ }[-] branch  [dimgray]a[-] exit  [dimgray]A[-] resume"
+	} else if g.finished {
 		// Game over state
 		status = fmt.Sprintf("[::b]Game Complete[::-]  %s", g.BoardState.Outcome)
 		controls = "[dimgray]q[-] quit"
@@ -432,7 +818,7 @@ func (g *GoBoardUI) refreshHint() {
 		} else {
 			status = "[dimgray]◌[-] Thinking..."
 		}
-		controls = "[dimgray]hjkl[-] move  [dimgray]⏎[-] play  [dimgray]p[-] pass  [dimgray]u[-] undo  [dimgray]r[-] rec  [dimgray]f[-] focus  [dimgray]q[-] quit"
+		controls = "[dimgray]hjkl[-] move  [dimgray]⏎[-] play  [dimgray]p[-] pass  [dimgray]u[-] undo  [dimgray]r[-] rec  [dimgray]a[-] plan  [dimgray]f[-] focus  [dimgray]q[-] quit"
 	}
 
 	// Prepend REC indicator when recording
@@ -559,6 +945,11 @@ func drawCoordinates(s tcell.Screen, x, y int, ui *GoBoardUI) {
 		hCoord = int('Ａ')
 	}
 
+	lmX, lmY := ui.BoardState.LastMove.X, ui.BoardState.LastMove.Y
+	if ui.planningMode {
+		lmX, lmY = ui.planLastMove[0], ui.planLastMove[1]
+	}
+
 	style := tcell.StyleDefault
 	highlight := tcell.StyleDefault.Background(ui.styles[8])
 	lpHighlight := tcell.StyleDefault.Background(ui.styles[7])
@@ -567,7 +958,7 @@ func drawCoordinates(s tcell.Screen, x, y int, ui *GoBoardUI) {
 		_style := style
 		if ix == ui.selX {
 			_style = highlight
-		} else if ix == ui.BoardState.LastMove.X {
+		} else if ix == lmX {
 			_style = lpHighlight
 		}
 		// 2-char cells
@@ -580,7 +971,7 @@ func drawCoordinates(s tcell.Screen, x, y int, ui *GoBoardUI) {
 		_style := style
 		if iyInv == ui.selY {
 			_style = highlight
-		} else if iyInv == ui.BoardState.LastMove.Y {
+		} else if iyInv == lmY {
 			_style = lpHighlight
 		}
 		displayNum := iy + 1
