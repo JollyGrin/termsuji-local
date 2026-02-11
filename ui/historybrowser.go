@@ -184,8 +184,8 @@ func (hb *HistoryBrowserUI) drawPreview(screen tcell.Screen, x, y, width, height
 		startX := x + 2
 		startY := y + 1
 
-		// Check we have room
-		if width >= size+4 && height >= size+6 {
+		// Check we have room (2 chars wide per cell for square aspect ratio)
+		if width >= size*2+4 && height >= size+6 {
 			emptyStyle := tcell.StyleDefault.Foreground(tcell.PaletteColor(240))
 			blackStyle := tcell.StyleDefault.Foreground(tcell.PaletteColor(255)).Bold(true)
 			whiteStyle := tcell.StyleDefault.Foreground(tcell.PaletteColor(250))
@@ -202,7 +202,7 @@ func (hb *HistoryBrowserUI) drawPreview(screen tcell.Screen, x, y, width, height
 						ch = '○'
 						style = whiteStyle
 					}
-					screen.SetContent(startX+bx, startY+by, ch, nil, style)
+					screen.SetContent(startX+bx*2, startY+by, ch, nil, style)
 				}
 			}
 
