@@ -83,11 +83,12 @@ Simply run the binary:
 
 ### Command Line Flags
 
-| Flag           | Description                 | Default |
-| -------------- | --------------------------- | ------- |
-| `--boardsize`  | Board size (9, 13, or 19)   | 19      |
-| `--difficulty` | GnuGo difficulty (1-10)     | 5       |
-| `--komi`       | Komi compensation for White | 6.5     |
+| Flag           | Description                        | Default |
+| -------------- | ---------------------------------- | ------- |
+| `--boardsize`  | Board size (9, 13, or 19)          | 19      |
+| `--difficulty` | GnuGo difficulty (1-10)            | 5       |
+| `--komi`       | Komi compensation for White        | 6.5     |
+| `--focus`      | Center board and hide hotkey hints | false   |
 
 You'll be presented with a game setup screen where you can configure:
 
@@ -101,6 +102,7 @@ You'll be presented with a game setup screen where you can configure:
 | Key        | Action                    |
 | ---------- | ------------------------- |
 | Arrow keys | Move cursor               |
+| hjkl       | Move cursor (vim motions) |
 | Enter      | Play move at cursor       |
 | p          | Pass turn                 |
 | q          | Quit (or deselect cursor) |
