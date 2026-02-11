@@ -25,26 +25,31 @@ https://github.com/user-attachments/assets/7bee8c44-5521-484b-b3cc-4ed2236fe9bd
 ### Installing GnuGo
 
 **macOS** (via Homebrew):
+
 ```bash
 brew install gnu-go
 ```
 
 **Linux (Ubuntu/Debian)**:
+
 ```bash
 sudo apt install gnugo
 ```
 
 **Linux (Fedora)**:
+
 ```bash
 sudo dnf install gnugo
 ```
 
 **Linux (Arch)**:
+
 ```bash
 sudo pacman -S gnugo
 ```
 
 **Windows**:
+
 1. Download GnuGo from http://www.gnu.org/software/gnugo/download.html
 2. Extract to a folder (e.g., `C:\gnugo`)
 3. Add the folder to your PATH:
@@ -53,6 +58,7 @@ sudo pacman -S gnugo
 4. Verify installation: `gnugo --version`
 
 Alternatively on Windows with WSL:
+
 ```bash
 sudo apt install gnugo
 ```
@@ -77,13 +83,14 @@ Simply run the binary:
 
 ### Command Line Flags
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--boardsize` | Board size (9, 13, or 19) | 19 |
-| `--level` | GnuGo difficulty (1-10) | 5 |
-| `--komi` | Komi compensation for White | 6.5 |
+| Flag           | Description                 | Default |
+| -------------- | --------------------------- | ------- |
+| `--boardsize`  | Board size (9, 13, or 19)   | 19      |
+| `--difficulty` | GnuGo difficulty (1-10)     | 5       |
+| `--komi`       | Komi compensation for White | 6.5     |
 
 You'll be presented with a game setup screen where you can configure:
+
 - Board size (9x9, 13x13, 19x19)
 - Your color (Black plays first, White plays second)
 - GnuGo difficulty level (1-10)
@@ -91,12 +98,12 @@ You'll be presented with a game setup screen where you can configure:
 
 ## Controls
 
-| Key | Action |
-|-----|--------|
-| Arrow keys | Move cursor |
-| Enter | Play move at cursor |
-| p | Pass turn |
-| q | Quit (or deselect cursor) |
+| Key        | Action                    |
+| ---------- | ------------------------- |
+| Arrow keys | Move cursor               |
+| Enter      | Play move at cursor       |
+| p          | Pass turn                 |
+| q          | Quit (or deselect cursor) |
 
 ## Configuration
 

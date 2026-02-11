@@ -31,6 +31,7 @@ var (
 	flagDifficulty = flag.Int("difficulty", 0, "GnuGo difficulty level (1-10)")
 	flagKomi       = flag.Float64("komi", -1, "Komi value")
 	flagQuickStart = flag.Bool("play", false, "Start game immediately with defaults")
+	flagFocus      = flag.Bool("focus", false, "Start in focus mode (fullscreen board)")
 	flagVersion    = flag.Bool("version", false, "Print version and exit")
 	flagUpdate     = flag.Bool("update", false, "Update to the latest version")
 )
@@ -88,22 +89,33 @@ func main() {
 	}
 
 	// Check if quick start requested
-	quickStart := *flagQuickStart || *flagBoardSize > 0 || *flagColor != "" || *flagDifficulty > 0 || *flagKomi >= 0
+	quickStart := *flagQuickStart || *flagBoardSize > 0 || *flagColor != "" || *flagDifficulty > 0 || *flagKomi >= 0 || *flagFocus
 
 	app = tview.NewApplication()
 	rootPage = tview.NewPages()
-	rootPage.SetBorder(true).SetTitle(" termsuji-local ")
+	rootPage.SetBorder(true).SetTitle(" ⬡ termsuji ")
 
-	// Game view setup
-	gameFrame = tview.NewFlex().SetDirection(tview.FlexRow)
+	// Draw "f to toggle" on the bottom border when in focus mode
+	rootPage.SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
+		if gameBoard != nil && gameBoard.IsFocusMode() {
+			title := " f to toggle "
+			titleX := x + (width-len(title))/2
+			titleY := y + height - 1 // bottom border line
+			for i, r := range title {
+				screen.SetContent(titleX+i, titleY, r, nil, tcell.StyleDefault)
+			}
+		}
+		return x, y, width, height
+	})
+
+	// Game view setup - compact horizontal status bar
 	gameHint = tview.NewTextView()
-	gameHint.SetBorder(true)
+	gameHint.SetBorder(false)
+	gameHint.SetDynamicColors(true)
 	gameBoard = ui.NewGoBoard(app, cfg, gameHint)
 
-	// Initial layout: board on top, hint at bottom
-	gameFrame.
-		AddItem(gameBoard.Box, 0, 1, true).
-		AddItem(gameHint, 7, 0, false)
+	// Create game layout with centered board and side panel
+	gameFrame = ui.CreateGameLayout(gameBoard, gameHint)
 
 	// Game board input handling
 	gameBoard.Box.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -133,8 +145,22 @@ func main() {
 			gameBoard.PlayMove(selTile.X, selTile.Y)
 		case tcell.KeyRune:
 			switch event.Rune() {
+			case 'h':
+				gameBoard.MoveSelection(-1, 0)
+			case 'j':
+				gameBoard.MoveSelection(0, 1)
+			case 'k':
+				gameBoard.MoveSelection(0, -1)
+			case 'l':
+				gameBoard.MoveSelection(1, 0)
 			case 'p':
 				gameBoard.Pass()
+			case 'f':
+				if gameBoard.ToggleFocusMode() {
+					ui.BuildFocusLayout(gameFrame, gameBoard)
+				} else {
+					ui.RebuildNormalLayout(gameFrame, gameBoard, gameHint)
+				}
 			}
 		}
 		return event
@@ -180,6 +206,11 @@ func main() {
 	if quickStart {
 		gameCfg := buildGameConfigFromFlags()
 		startGame(gameCfg)
+		// Enter focus mode if requested
+		if *flagFocus {
+			gameBoard.SetFocusMode(true)
+			ui.BuildFocusLayout(gameFrame, gameBoard)
+		}
 	}
 
 	if err := app.SetRoot(rootPage, true).Run(); err != nil {
@@ -192,11 +223,8 @@ func startGame(gameCfg engine.GameConfig) {
 	// Use configured GnuGo path
 	gameCfg.EnginePath = cfg.GnuGo.Path
 
-	// Update game board flex layout
-	gameFrame.Clear()
-	gameFrame.
-		AddItem(gameBoard.Box, 0, 1, true).
-		AddItem(gameHint, 7, 0, false)
+	// Set komi on info panel
+	gameBoard.SetKomi(gameCfg.Komi)
 
 	// Start the game
 	eng := gtp.NewGTPEngine(gameCfg)
