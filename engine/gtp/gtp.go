@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -91,15 +92,54 @@ func (g *GTPEngine) Connect() error {
 		return fmt.Errorf("failed to set komi: %w", err)
 	}
 
-	// Determine who plays first
-	// Black always plays first in Go
-	if g.playerColor == 1 {
-		// Human is black, human's turn first
-		g.myTurn = true
+	// Load SGF if resuming a game
+	if g.config.LoadSGFPath != "" {
+		// GTP is space-delimited with no quoting support, so paths with spaces
+		// (e.g. ~/Library/Application Support/...) break loadsgf. Copy to a
+		// temp file with a safe path as a workaround.
+		sgfPath := g.config.LoadSGFPath
+		if strings.Contains(sgfPath, " ") {
+			data, err := os.ReadFile(sgfPath)
+			if err != nil {
+				return fmt.Errorf("failed to read SGF file: %w", err)
+			}
+			tmpPath := filepath.Join(os.TempDir(), "termsuji-load.sgf")
+			if err := os.WriteFile(tmpPath, data, 0644); err != nil {
+				return fmt.Errorf("failed to write temp SGF file: %w", err)
+			}
+			defer os.Remove(tmpPath)
+			sgfPath = tmpPath
+		}
+		if _, err := g.sendCommand(fmt.Sprintf("loadsgf %s", sgfPath)); err != nil {
+			return fmt.Errorf("failed to load SGF: %w", err)
+		}
+		g.updateBoardFromGnuGo()
+		g.boardState.MoveNumber = g.config.LoadMoveCount
+
+		// Determine whose turn: black if even move count, white if odd
+		nextColor := 1 // black
+		if g.config.LoadMoveCount%2 != 0 {
+			nextColor = 2 // white
+		}
+		g.boardState.PlayerToMove = nextColor
+
+		if nextColor == g.playerColor {
+			g.myTurn = true
+		} else {
+			g.myTurn = false
+			go g.triggerEngineMove()
+		}
 	} else {
-		// Human is white, engine (black) plays first
-		g.myTurn = false
-		go g.triggerEngineMove()
+		// Determine who plays first
+		// Black always plays first in Go
+		if g.playerColor == 1 {
+			// Human is black, human's turn first
+			g.myTurn = true
+		} else {
+			// Human is white, engine (black) plays first
+			g.myTurn = false
+			go g.triggerEngineMove()
+		}
 	}
 
 	return nil
@@ -414,6 +454,44 @@ func (g *GTPEngine) handleGameEnd() {
 	if g.endCallback != nil {
 		g.endCallback(outcome)
 	}
+}
+
+// Undo undoes the last move (one ply) in GnuGo.
+func (g *GTPEngine) Undo() error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	if g.gameOver {
+		return fmt.Errorf("game is over")
+	}
+	if g.boardState.MoveNumber == 0 {
+		return fmt.Errorf("no moves to undo")
+	}
+
+	if _, err := g.sendCommand("undo"); err != nil {
+		return fmt.Errorf("undo failed: %w", err)
+	}
+
+	g.boardState.MoveNumber--
+	g.passCount = 0
+
+	// Resync board from GnuGo
+	g.updateBoardFromGnuGo()
+
+	// Toggle whose turn it is
+	if g.boardState.PlayerToMove == g.playerColor {
+		g.boardState.PlayerToMove = oppositeColor(g.playerColor)
+		g.myTurn = false
+	} else {
+		g.boardState.PlayerToMove = g.playerColor
+		g.myTurn = true
+	}
+
+	// Clear last move indicator (we don't know the previous last move)
+	g.boardState.LastMove.X = -1
+	g.boardState.LastMove.Y = -1
+
+	return nil
 }
 
 // IsMyTurn returns true if it's the human player's turn.

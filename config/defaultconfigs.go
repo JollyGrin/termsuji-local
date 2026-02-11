@@ -40,5 +40,6 @@ func init() {
 			DefaultKomi:      6.5,
 			DefaultLevel:     5,
 		},
+		EnableRecording: true,
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 
 	"github.com/adrg/xdg"
 )
@@ -61,8 +62,14 @@ type GnuGoConfig struct {
 }
 
 type Config struct {
-	Theme  Theme       `json:"theme"`
-	GnuGo  GnuGoConfig `json:"gnugo"`
+	Theme           Theme       `json:"theme"`
+	GnuGo           GnuGoConfig `json:"gnugo"`
+	EnableRecording bool        `json:"enable_recording"`
+}
+
+// HistoryDir returns the path for storing SGF game history files.
+func HistoryDir() string {
+	return filepath.Join(xdg.ConfigHome, "termsuji-local", "history")
 }
 
 func InitConfig() (*Config, error) {

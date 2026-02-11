@@ -77,6 +77,12 @@ func gtpToPos(vertex string, size int) (int, int, error) {
 	return col, y, nil
 }
 
+// PosToGTPDisplay converts termsuji coordinates to GTP display notation (e.g., "D4").
+// Exported for use by UI components that display move coordinates.
+func PosToGTPDisplay(x, y, size int) string {
+	return posToGTP(x, y, size)
+}
+
 // colorToGTP converts a color (1=black, 2=white) to GTP color string.
 func colorToGTP(color int) string {
 	if color == 1 {

@@ -18,6 +18,7 @@ import (
 	"termsuji-local/config"
 	"termsuji-local/engine"
 	"termsuji-local/engine/gtp"
+	"termsuji-local/sgf"
 	"termsuji-local/ui"
 )
 
@@ -155,6 +156,10 @@ func main() {
 				gameBoard.MoveSelection(1, 0)
 			case 'p':
 				gameBoard.Pass()
+			case 'u':
+				gameBoard.UndoMove()
+			case 'r':
+				gameBoard.ToggleRecording(cfg)
 			case 'f':
 				if gameBoard.ToggleFocusMode() {
 					ui.BuildFocusLayout(gameFrame, gameBoard)
@@ -164,6 +169,13 @@ func main() {
 			}
 		}
 		return event
+	})
+
+	// History browser screen
+	historyBrowser := ui.NewHistoryBrowser(func() {
+		rootPage.SwitchToPage("setup")
+	}, func(game sgf.GameInfo) {
+		loadGame(game)
 	})
 
 	// Game setup screen
@@ -176,6 +188,10 @@ func main() {
 		},
 		func() {
 			rootPage.SwitchToPage("colors")
+		},
+		func() {
+			historyBrowser.Refresh()
+			rootPage.SwitchToPage("history")
 		},
 	)
 
@@ -201,6 +217,7 @@ func main() {
 	rootPage.AddPage("setup", setupUI.Form(), true, !quickStart)
 	rootPage.AddPage("gameview", gameFrame, true, quickStart)
 	rootPage.AddPage("colors", colorConfig.Flex(), true, false)
+	rootPage.AddPage("history", historyBrowser.Flex(), true, false)
 
 	// Quick start if flags provided
 	if quickStart {
@@ -239,6 +256,75 @@ func startGame(gameCfg engine.GameConfig) {
 		rootPage.AddPage("error", modal, true, true)
 		return
 	}
+
+	// Set up SGF recording
+	gameBoard.SetGameConfig(gameCfg)
+	if cfg.EnableRecording {
+		rec, err := sgf.NewGameRecord(config.HistoryDir(), gameCfg.BoardSize, gameCfg.Komi, gameCfg.PlayerColor, gameCfg.EngineLevel)
+		if err == nil {
+			gameBoard.SetRecorder(rec)
+		}
+	}
+
+	rootPage.SwitchToPage("gameview")
+}
+
+// loadGame loads a saved game from history for continued play.
+func loadGame(game sgf.GameInfo) {
+	// Determine player color: if PB contains "GnuGo", human is white
+	playerColor := 1
+	if strings.Contains(game.PlayerBlack, "GnuGo") {
+		playerColor = 2
+	}
+
+	// Parse engine level from player name (e.g., "GnuGo Level 5")
+	engineLevel := 5 // default
+	engineName := game.PlayerWhite
+	if playerColor == 2 {
+		engineName = game.PlayerBlack
+	}
+	if strings.Contains(engineName, "GnuGo Level ") {
+		fmt.Sscanf(engineName, "GnuGo Level %d", &engineLevel)
+	}
+
+	gameCfg := engine.GameConfig{
+		BoardSize:     game.BoardSize,
+		Komi:          game.Komi,
+		PlayerColor:   playerColor,
+		EngineLevel:   engineLevel,
+		EnginePath:    cfg.GnuGo.Path,
+		LoadSGFPath:   game.FilePath,
+		LoadMoveCount: game.MoveCount,
+	}
+
+	gameBoard.SetKomi(gameCfg.Komi)
+
+	eng := gtp.NewGTPEngine(gameCfg)
+	if err := gameBoard.ConnectEngine(eng); err != nil {
+		modal := tview.NewModal().
+			SetText(fmt.Sprintf("Failed to load game:\n%s", err.Error())).
+			AddButtons([]string{"OK"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				rootPage.HidePage("error")
+			})
+		rootPage.AddPage("error", modal, true, true)
+		return
+	}
+
+	gameBoard.SetGameConfig(gameCfg)
+
+	// Rebuild move history from SGF so undo and move list work
+	moves, err := sgf.ParseMovesAsEntries(game.FilePath)
+	if err == nil {
+		gameBoard.SetMoveHistory(moves)
+	}
+
+	// Open existing SGF for continued recording
+	rec, err := sgf.OpenGameRecord(game.FilePath)
+	if err == nil {
+		gameBoard.SetRecorder(rec)
+	}
+
 	rootPage.SwitchToPage("gameview")
 }
 

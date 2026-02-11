@@ -15,6 +15,9 @@ https://github.com/user-attachments/assets/a1840760-7898-43e2-bf6a-58927999c4fb
 - Adjustable engine difficulty (levels 1-10)
 - Choose your color (Black/White)
 - Customizable board color
+- Games saved as SGF files — the universal Go game record format
+- Game history browser — revisit and continue past games
+- Undo moves
 
 ## Requirements
 
@@ -110,6 +113,8 @@ You'll be presented with a game setup screen where you can configure:
 | Enter      | Play move at cursor       |
 | p          | Pass turn                 |
 | f          | Toggle focus mode         |
+| u          | Undo last move            |
+| r          | Toggle game recording     |
 | q          | Quit (or deselect cursor) |
 
 ## Configuration
