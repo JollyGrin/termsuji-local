@@ -108,12 +108,10 @@ func main() {
 		return x, y, width, height
 	})
 
-	// Game view setup
+	// Game view setup - compact horizontal status bar
 	gameHint = tview.NewTextView()
-	gameHint.SetBorder(true)
-	gameHint.SetBorderPadding(0, 0, 1, 1)
-	gameHint.SetTitle(" Status ")
-	gameHint.SetTitleAlign(tview.AlignLeft)
+	gameHint.SetBorder(false)
+	gameHint.SetDynamicColors(true)
 	gameBoard = ui.NewGoBoard(app, cfg, gameHint)
 
 	// Create game layout with centered board and side panel

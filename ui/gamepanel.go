@@ -81,10 +81,10 @@ func CreateGameLayout(board *GoBoardUI, hint *tview.TextView) *tview.Flex {
 	boardRow.AddItem(board.Box, 0, 1, true)         // Board (flexible, takes remaining space)
 	boardRow.AddItem(infoPanel.Box(), 26, 0, false) // Info panel (fixed width)
 
-	// Main vertical flex: board area on top, status at bottom
+	// Main vertical flex: board area on top, compact status bar at bottom
 	mainFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 	mainFlex.AddItem(boardRow, 0, 1, true)
-	mainFlex.AddItem(hint, 7, 0, false)
+	mainFlex.AddItem(hint, 2, 0, false) // Compact: just 2 rows
 
 	return mainFlex
 }
@@ -119,10 +119,10 @@ func RebuildNormalLayout(gameFrame *tview.Flex, board *GoBoardUI, hint *tview.Te
 	boardRow.AddItem(board.Box, 0, 1, true)         // Board (flexible, takes remaining space)
 	boardRow.AddItem(infoPanel.Box(), 26, 0, false) // Info panel (fixed width)
 
-	// Main vertical flex: board area on top, status at bottom
+	// Main vertical flex: board area on top, compact status bar at bottom
 	gameFrame.SetDirection(tview.FlexRow)
 	gameFrame.AddItem(boardRow, 0, 1, true)
-	gameFrame.AddItem(hint, 7, 0, false)
+	gameFrame.AddItem(hint, 2, 0, false) // Compact: just 2 rows
 }
 
 // BuildFocusLayout builds the focus mode layout with just the centered board.

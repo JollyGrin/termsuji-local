@@ -292,19 +292,20 @@ func (g *GoBoardUI) refreshHint() {
 		return
 	}
 
-	var statusLine, turnLine, controlsLine string
+	// Get terminal width for responsive layout
+	_, _, width, _ := g.hint.GetInnerRect()
+	if width < 40 {
+		width = 80 // fallback
+	}
+
+	var status, controls string
 
 	if g.finished {
 		// Game over state
-		statusLine = "───────── Game Complete ─────────\n\n"
-		turnLine = fmt.Sprintf("  Result: %s\n", g.BoardState.Outcome)
-		controlsLine = "\n  q · return to menu"
+		status = fmt.Sprintf("[::b]Game Complete[::-]  %s", g.BoardState.Outcome)
+		controls = "[dimgray]q[-] quit"
 	} else {
 		// Active game state
-		if g.lastTurnPass {
-			statusLine = "  ○ Opponent passed\n\n"
-		}
-
 		if g.eng != nil && g.eng.IsMyTurn() {
 			stone := "●"
 			color := "Black"
@@ -312,17 +313,32 @@ func (g *GoBoardUI) refreshHint() {
 				stone = "○"
 				color = "White"
 			}
-			turnLine = fmt.Sprintf("  %s Your move (%s)\n", stone, color)
+			if g.lastTurnPass {
+				status = fmt.Sprintf("%s Your move (%s)  [dimgray]· opponent passed[-]", stone, color)
+			} else {
+				status = fmt.Sprintf("%s Your move (%s)", stone, color)
+			}
 		} else {
-			turnLine = "  ◌ Thinking...\n"
+			status = "[dimgray]◌[-] Thinking..."
 		}
-
-		controlsLine = `
-  hjkl/↑↓←→ move   ⏎ play
-         p pass   f focus   q quit`
+		controls = "[dimgray]hjkl[-] move  [dimgray]⏎[-] play  [dimgray]p[-] pass  [dimgray]f[-] focus  [dimgray]q[-] quit"
 	}
 
-	g.hint.SetText(fmt.Sprintf("%s%s%s", statusLine, turnLine, controlsLine))
+	// Build the horizontal bar: status left, controls right
+	// Calculate spacing to push controls to the right
+	statusLen := len(tview.TranslateANSI(status))
+	controlsLen := len(tview.TranslateANSI(controls))
+	padding := width - statusLen - controlsLen - 4 // 4 for margins
+	if padding < 2 {
+		padding = 2
+	}
+
+	spacer := ""
+	for i := 0; i < padding; i++ {
+		spacer += " "
+	}
+
+	g.hint.SetText(fmt.Sprintf("  %s%s%s", status, spacer, controls))
 }
 
 // IsFinished returns true if the game is over.
