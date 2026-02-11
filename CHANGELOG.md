@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.4.1] - 2026-02-11
+
+- fix the spacing on history preview so its easier to visualize the board
+
 ## [v0.4.0] - 2026-02-11
 
 - added plan mode to control both black/white stones and preview next moves
