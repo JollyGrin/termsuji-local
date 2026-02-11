@@ -95,7 +95,7 @@ func NewGameSetup(onStart func(engine.GameConfig), onCancel func(), onColors fun
 	})
 
 	// Buttons
-	setup.playButton = NewMenuButton("PLAY", true, func() {
+	setup.playButton = NewMenuButton("(P)LAY", true, func() {
 		cfg := engine.GameConfig{
 			BoardSize:   setup.boardSize,
 			Komi:        setup.komi,
@@ -331,6 +331,12 @@ func (s *GameSetupUI) handleInput(event *tcell.EventKey) *tcell.EventKey {
 	case tcell.KeyEscape:
 		s.onCancel()
 		return nil
+	case tcell.KeyRune:
+		// Hotkey 'p' to play (unless in komi input)
+		if event.Rune() == 'p' && s.focusIndex != 3 {
+			s.playButton.HandleKey(tcell.NewEventKey(tcell.KeyEnter, 0, tcell.ModNone))
+			return nil
+		}
 	}
 
 	return event
