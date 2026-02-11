@@ -89,7 +89,10 @@
           "Configurable board sizes (9x9, 13x13, 19x19)",
           "10 difficulty levels",
           "Completely offline - no internet required",
-          "Cross-platform (macOS, Linux, Windows)"
+          "Cross-platform (macOS, Linux, Windows)",
+          "Games saved as SGF files",
+          "Game history browser",
+          "Undo moves"
         ],
         "screenshot": "https://jollygrin.github.io/termsuji-local/screenshot.png",
         "url": "https://github.com/jollygrin/termsuji-local",
@@ -272,6 +275,33 @@
               Free and open source. Contribute, modify, and learn from the code.
             </p>
           </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">&#128190;</div>
+            <h3>SGF Game Saving</h3>
+            <p>
+              Games are automatically saved in SGF format — the universal
+              standard for Go game records.
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">&#128214;</div>
+            <h3>Game History</h3>
+            <p>
+              Browse your past games and pick up where you left off. Your full
+              move history is preserved.
+            </p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">&#8634;</div>
+            <h3>Undo Moves</h3>
+            <p>
+              Made a mistake? Press U to undo your last move and try a different
+              line.
+            </p>
+          </article>
         </div>
       </section>
 
@@ -365,6 +395,14 @@ go build -o termsuji-local .</code></pre>
             <tr>
               <td><kbd>Q</kbd></td>
               <td>Quit the game</td>
+            </tr>
+            <tr>
+              <td><kbd>U</kbd></td>
+              <td>Undo last move</td>
+            </tr>
+            <tr>
+              <td><kbd>R</kbd></td>
+              <td>Toggle game recording</td>
             </tr>
           </tbody>
         </table>
