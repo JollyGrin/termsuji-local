@@ -83,12 +83,16 @@ Simply run the binary:
 
 ### Command Line Flags
 
-| Flag           | Description                        | Default |
-| -------------- | ---------------------------------- | ------- |
-| `--boardsize`  | Board size (9, 13, or 19)          | 19      |
-| `--difficulty` | GnuGo difficulty (1-10)            | 5       |
-| `--komi`       | Komi compensation for White        | 6.5     |
-| `--focus`      | Center board and hide hotkey hints | false   |
+| Flag           | Description                            | Default |
+| -------------- | -------------------------------------- | ------- |
+| `--boardsize`  | Board size (9, 13, or 19)              | 19      |
+| `--color`      | Player color (black or white)          | black   |
+| `--difficulty` | GnuGo difficulty level (1-10)          | 5       |
+| `--komi`       | Komi value                             | 6.5     |
+| `--play`       | Start game immediately with defaults   | false   |
+| `--focus`      | Start in focus mode (fullscreen board) | false   |
+| `--version`    | Print version and exit                 |         |
+| `--update`     | Update to the latest version           |         |
 
 You'll be presented with a game setup screen where you can configure:
 
@@ -105,6 +109,7 @@ You'll be presented with a game setup screen where you can configure:
 | hjkl       | Move cursor (vim motions) |
 | Enter      | Play move at cursor       |
 | p          | Pass turn                 |
+| f          | Toggle focus mode         |
 | q          | Quit (or deselect cursor) |
 
 ## Configuration
