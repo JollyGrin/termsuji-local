@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.3.0] - 2026-02-11
+
+- - games autosaved as sgf
+- - can view and open previous games from history button on menu
+- - can undo moves
+
 ## [v0.2.0] - 2026-02-11
 
 - update the menu ux and hotkeys to easily jump in
