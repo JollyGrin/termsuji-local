@@ -289,6 +289,14 @@ func (g *GoBoardUI) SetGameConfig(gc engine.GameConfig) {
 	g.gameConfig = gc
 }
 
+// SetMoveHistory populates the move history from loaded game data.
+func (g *GoBoardUI) SetMoveHistory(moves [][3]int) {
+	g.moveHistory = nil
+	for _, m := range moves {
+		g.moveHistory = append(g.moveHistory, MoveEntry{X: m[1], Y: m[2], Color: m[0]})
+	}
+}
+
 // UndoMove undoes the last player+engine move pair so it's the player's turn again.
 func (g *GoBoardUI) UndoMove() {
 	if g.finished || g.eng == nil {

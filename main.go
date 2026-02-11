@@ -313,6 +313,12 @@ func loadGame(game sgf.GameInfo) {
 
 	gameBoard.SetGameConfig(gameCfg)
 
+	// Rebuild move history from SGF so undo and move list work
+	moves, err := sgf.ParseMovesAsEntries(game.FilePath)
+	if err == nil {
+		gameBoard.SetMoveHistory(moves)
+	}
+
 	// Open existing SGF for continued recording
 	rec, err := sgf.OpenGameRecord(game.FilePath)
 	if err == nil {

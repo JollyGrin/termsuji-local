@@ -486,6 +486,24 @@ func ParseSetupPositions(filePath string) ([]string, []string, error) {
 	return blacks, whites, nil
 }
 
+// ParseMovesAsEntries returns all moves as (color, x, y) triples.
+func ParseMovesAsEntries(filePath string) ([][3]int, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	nodes := parseNodes(string(data))
+	var result [][3]int
+	for _, node := range nodes {
+		color, x, y, ok := parseMoveNode(node)
+		if !ok {
+			continue
+		}
+		result = append(result, [3]int{color, x, y})
+	}
+	return result, nil
+}
+
 // ListGames scans a directory for .sgf files and returns their parsed headers,
 // sorted newest-first (by filename, which contains timestamps).
 func ListGames(dir string) ([]GameInfo, error) {
