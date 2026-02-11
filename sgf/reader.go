@@ -408,6 +408,84 @@ func removeGroup(board [][]int, size, x, y, color int) {
 	}
 }
 
+// ParseMovesForRecord parses an SGF file and returns moves in the format used by GameRecord.moves
+// (e.g., ";B[pd]", ";W[]" for passes).
+func ParseMovesForRecord(filePath string) ([]string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	content := string(data)
+	nodes := parseNodes(content)
+
+	var moves []string
+	for _, node := range nodes {
+		color, x, y, ok := parseMoveNode(node)
+		if !ok {
+			continue
+		}
+		colorChar := "B"
+		if color == 2 {
+			colorChar = "W"
+		}
+		if x == -1 && y == -1 {
+			moves = append(moves, fmt.Sprintf(";%s[]", colorChar))
+		} else {
+			moves = append(moves, fmt.Sprintf(";%s[%s]", colorChar, string(rune('a'+x))+string(rune('a'+y))))
+		}
+	}
+
+	return moves, nil
+}
+
+// ParseSetupPositions parses AB[]/AW[] setup positions from an SGF file.
+// Returns black coords and white coords in SGF letter-pair format (e.g., "dd", "pp").
+func ParseSetupPositions(filePath string) ([]string, []string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	content := string(data)
+	var blacks, whites []string
+
+	i := strings.Index(content, "(;")
+	if i == -1 {
+		return blacks, whites, nil
+	}
+
+	for i < len(content) {
+		if content[i] == 'A' && i+1 < len(content) && (content[i+1] == 'B' || content[i+1] == 'W') {
+			isBlack := content[i+1] == 'B'
+			i += 2
+
+			for i < len(content) && content[i] == '[' {
+				i++ // skip '['
+				start := i
+				for i < len(content) && content[i] != ']' {
+					i++
+				}
+				coord := content[start:i]
+				if i < len(content) {
+					i++ // skip ']'
+				}
+				if len(coord) == 2 {
+					if isBlack {
+						blacks = append(blacks, coord)
+					} else {
+						whites = append(whites, coord)
+					}
+				}
+			}
+		} else {
+			i++
+		}
+	}
+
+	return blacks, whites, nil
+}
+
 // ListGames scans a directory for .sgf files and returns their parsed headers,
 // sorted newest-first (by filename, which contains timestamps).
 func ListGames(dir string) ([]GameInfo, error) {

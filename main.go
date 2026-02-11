@@ -174,6 +174,8 @@ func main() {
 	// History browser screen
 	historyBrowser := ui.NewHistoryBrowser(func() {
 		rootPage.SwitchToPage("setup")
+	}, func(game sgf.GameInfo) {
+		loadGame(game)
 	})
 
 	// Game setup screen
@@ -262,6 +264,59 @@ func startGame(gameCfg engine.GameConfig) {
 		if err == nil {
 			gameBoard.SetRecorder(rec)
 		}
+	}
+
+	rootPage.SwitchToPage("gameview")
+}
+
+// loadGame loads a saved game from history for continued play.
+func loadGame(game sgf.GameInfo) {
+	// Determine player color: if PB contains "GnuGo", human is white
+	playerColor := 1
+	if strings.Contains(game.PlayerBlack, "GnuGo") {
+		playerColor = 2
+	}
+
+	// Parse engine level from player name (e.g., "GnuGo Level 5")
+	engineLevel := 5 // default
+	engineName := game.PlayerWhite
+	if playerColor == 2 {
+		engineName = game.PlayerBlack
+	}
+	if strings.Contains(engineName, "GnuGo Level ") {
+		fmt.Sscanf(engineName, "GnuGo Level %d", &engineLevel)
+	}
+
+	gameCfg := engine.GameConfig{
+		BoardSize:     game.BoardSize,
+		Komi:          game.Komi,
+		PlayerColor:   playerColor,
+		EngineLevel:   engineLevel,
+		EnginePath:    cfg.GnuGo.Path,
+		LoadSGFPath:   game.FilePath,
+		LoadMoveCount: game.MoveCount,
+	}
+
+	gameBoard.SetKomi(gameCfg.Komi)
+
+	eng := gtp.NewGTPEngine(gameCfg)
+	if err := gameBoard.ConnectEngine(eng); err != nil {
+		modal := tview.NewModal().
+			SetText(fmt.Sprintf("Failed to load game:\n%s", err.Error())).
+			AddButtons([]string{"OK"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				rootPage.HidePage("error")
+			})
+		rootPage.AddPage("error", modal, true, true)
+		return
+	}
+
+	gameBoard.SetGameConfig(gameCfg)
+
+	// Open existing SGF for continued recording
+	rec, err := sgf.OpenGameRecord(game.FilePath)
+	if err == nil {
+		gameBoard.SetRecorder(rec)
 	}
 
 	rootPage.SwitchToPage("gameview")

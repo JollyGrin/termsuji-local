@@ -21,12 +21,14 @@ type HistoryBrowserUI struct {
 	boards   map[int][][]int // cached final positions
 	selected int
 	onDone   func()
+	onOpen   func(sgf.GameInfo)
 }
 
 // NewHistoryBrowser creates a new history browser screen.
-func NewHistoryBrowser(onDone func()) *HistoryBrowserUI {
+func NewHistoryBrowser(onDone func(), onOpen func(sgf.GameInfo)) *HistoryBrowserUI {
 	hb := &HistoryBrowserUI{
 		onDone: onDone,
+		onOpen: onOpen,
 		boards: make(map[int][][]int),
 	}
 
@@ -51,7 +53,7 @@ func NewHistoryBrowser(onDone func()) *HistoryBrowserUI {
 	hb.hint = tview.NewTextView()
 	hb.hint.SetDynamicColors(true)
 	hb.hint.SetBorder(false)
-	hb.hint.SetText("  [dimgray]d[-] delete  [dimgray]q[-] back")
+	hb.hint.SetText("  [dimgray]o[-] open  [dimgray]d[-] delete  [dimgray]q[-] back")
 
 	// Handle list selection changes
 	hb.gameList.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
@@ -123,12 +125,25 @@ func (hb *HistoryBrowserUI) handleInput(event *tcell.EventKey) *tcell.EventKey {
 				hb.onDone()
 			}
 			return nil
+		case 'o':
+			hb.openSelected()
+			return nil
 		case 'd':
 			hb.deleteSelected()
 			return nil
 		}
 	}
 	return event
+}
+
+// openSelected loads the currently selected game for continued play.
+func (hb *HistoryBrowserUI) openSelected() {
+	if hb.selected < 0 || hb.selected >= len(hb.games) {
+		return
+	}
+	if hb.onOpen != nil {
+		hb.onOpen(hb.games[hb.selected])
+	}
 }
 
 // deleteSelected removes the currently selected game file.

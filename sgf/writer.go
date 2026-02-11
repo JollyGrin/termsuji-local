@@ -69,6 +69,52 @@ func NewGameRecord(dir string, boardSize int, komi float64, playerColor, engineL
 	return rec, nil
 }
 
+// OpenGameRecord opens an existing SGF file for continued play.
+// It parses the header, moves, and setup positions, then opens the file for writing.
+// The Result is reset to "?" to allow continued play.
+func OpenGameRecord(filePath string) (*GameRecord, error) {
+	info, err := ParseHeader(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("parse header: %w", err)
+	}
+
+	moves, err := ParseMovesForRecord(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("parse moves: %w", err)
+	}
+
+	blacks, whites, err := ParseSetupPositions(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("parse setup: %w", err)
+	}
+
+	f, err := os.OpenFile(filePath, os.O_RDWR, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("open sgf file: %w", err)
+	}
+
+	rec := &GameRecord{
+		FilePath:    filePath,
+		BoardSize:   info.BoardSize,
+		Komi:        info.Komi,
+		PlayerBlack: info.PlayerBlack,
+		PlayerWhite: info.PlayerWhite,
+		Date:        info.Date,
+		Result:      "?",
+		moves:       moves,
+		setupBlack:  blacks,
+		setupWhite:  whites,
+		file:        f,
+	}
+
+	if err := rec.flush(); err != nil {
+		f.Close()
+		return nil, err
+	}
+
+	return rec, nil
+}
+
 // sgfCoord converts 0-indexed board coordinates to SGF letter pair.
 // (0,0) -> "aa", (3,4) -> "de", (18,18) -> "ss".
 func sgfCoord(x, y int) string {
