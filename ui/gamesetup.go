@@ -15,16 +15,18 @@ type GameSetupUI struct {
 	onStart  func(engine.GameConfig)
 	onCancel func()
 	onColors func()
+	onHistory func()
 
 	// Components
-	card        *MenuCard
-	boardSelect *RadioSelect
-	colorSelect *RadioSelect
-	levelSlider *LevelSlider
-	komiInput   *KomiInput
-	playButton  *MenuButton
-	colorButton *MenuButton
-	quitButton  *MenuButton
+	card          *MenuCard
+	boardSelect   *RadioSelect
+	colorSelect   *RadioSelect
+	levelSlider   *LevelSlider
+	komiInput     *KomiInput
+	playButton    *MenuButton
+	historyButton *MenuButton
+	colorButton   *MenuButton
+	quitButton    *MenuButton
 
 	// Focus management
 	focusIndex int
@@ -44,11 +46,12 @@ type focusableComponent interface {
 }
 
 // NewGameSetup creates a new game setup form.
-func NewGameSetup(onStart func(engine.GameConfig), onCancel func(), onColors func()) *GameSetupUI {
+func NewGameSetup(onStart func(engine.GameConfig), onCancel func(), onColors func(), onHistory func()) *GameSetupUI {
 	setup := &GameSetupUI{
 		onStart:     onStart,
 		onCancel:    onCancel,
 		onColors:    onColors,
+		onHistory:   onHistory,
 		boardSize:   19,
 		playerColor: 1,
 		level:       5,
@@ -106,6 +109,12 @@ func NewGameSetup(onStart func(engine.GameConfig), onCancel func(), onColors fun
 		onStart(cfg)
 	})
 
+	setup.historyButton = NewMenuButton("HISTORY", false, func() {
+		if onHistory != nil {
+			onHistory()
+		}
+	})
+
 	setup.colorButton = NewMenuButton("COLORS", false, func() {
 		if onColors != nil {
 			onColors()
@@ -123,6 +132,7 @@ func NewGameSetup(onStart func(engine.GameConfig), onCancel func(), onColors fun
 		setup.levelSlider,
 		setup.komiInput,
 		setup.playButton,
+		setup.historyButton,
 		setup.colorButton,
 		setup.quitButton,
 	}
@@ -247,10 +257,11 @@ func (s *GameSetupUI) drawCard(screen tcell.Screen, x, y, width, height int) {
 func (s *GameSetupUI) drawButtons(screen tcell.Screen, x, y, width int) {
 	// Calculate total button width
 	playW := s.playButton.Width()
+	historyW := s.historyButton.Width()
 	colorW := s.colorButton.Width()
 	quitW := s.quitButton.Width()
 	spacing := 2
-	totalW := playW + colorW + quitW + spacing*2
+	totalW := playW + historyW + colorW + quitW + spacing*3
 
 	// Center buttons
 	buttonX := x + (width-totalW)/2
@@ -258,6 +269,8 @@ func (s *GameSetupUI) drawButtons(screen tcell.Screen, x, y, width int) {
 
 	// Draw buttons
 	buttonX += s.playButton.Draw(screen, buttonX, buttonY)
+	buttonX += spacing
+	buttonX += s.historyButton.Draw(screen, buttonX, buttonY)
 	buttonX += spacing
 	buttonX += s.colorButton.Draw(screen, buttonX, buttonY)
 	buttonX += spacing
@@ -301,7 +314,7 @@ func (s *GameSetupUI) handleInput(event *tcell.EventKey) *tcell.EventKey {
 		}
 	case tcell.KeyRight:
 		// Handle right arrow in button row
-		if s.focusIndex >= 4 && s.focusIndex < 6 {
+		if s.focusIndex >= 4 && s.focusIndex < 7 {
 			s.cycleFocus(1)
 			return nil
 		}

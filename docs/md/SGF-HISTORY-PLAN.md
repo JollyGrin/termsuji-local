@@ -6,6 +6,26 @@
 
 termsuji-local currently has no game persistence. Every game is lost when you quit. This plan implements automatic SGF recording, a toggle to control it, and a history browser screen -- built incrementally so each phase is independently useful.
 
+## Implementation Progress
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| 1. SGF Writer Module | **COMPLETE** | 12 unit tests passing. `sgf/writer.go` + `sgf/writer_test.go` |
+| 2. Wire Recording + Config | **COMPLETE** | Config toggle, REC indicator, auto-save on every move |
+| 3. Mid-Game Recording Toggle | **COMPLETE** | `r` key toggles recording, AB/AW setup for mid-game start |
+| 4. SGF Reader Module | **COMPLETE** | 11 reader tests + 12 writer tests = 23 total. Capture logic verified. |
+| 5. History Browser Screen | **COMPLETE** | List + preview layout, delete support, HISTORY button on setup |
+
+### Findings & Learnings
+
+- `AddSetupPosition` needed to call `flush()` to persist immediately (caught by test)
+- SGF coordinate system aligns with termsuji's 0-indexed (x,y) top-left origin: `sgfCoord(x,y) = string('a'+x) + string('a'+y)`
+- `parseResult()` handles both GnuGo verbose output ("White wins by 5.5 points") and already-formatted SGF ("W+5.5")
+- Reader capture logic uses flood-fill DFS for liberty checking (~40 lines)
+- History browser uses `·` for empty intersections (lighter than `.`), `●`/`○` for stones
+- Omitted save-as (`s` key) from Phase 5 to keep scope minimal; can be added later
+- HISTORY button placed between (P)LAY and COLORS in the button row; focus indices updated accordingly
+
 ---
 
 ## Phase 1: SGF Writer Module

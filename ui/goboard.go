@@ -9,6 +9,7 @@ import (
 
 	"termsuji-local/config"
 	"termsuji-local/engine"
+	"termsuji-local/sgf"
 	"termsuji-local/types"
 )
 
@@ -26,6 +27,8 @@ type GoBoardUI struct {
 	styles       []tcell.Color
 	infoPanel    *GameInfoPanel
 	focusMode    bool
+	recorder     *sgf.GameRecord
+	gameConfig   engine.GameConfig
 }
 
 // ToggleFocusMode toggles focus mode and returns the new state.
@@ -196,6 +199,9 @@ func (g *GoBoardUI) ConnectEngine(e engine.GameEngine) error {
 	e.OnMove(func(x, y, color int, boardState *types.BoardState) {
 		g.lastTurnPass = (x == -1 && y == -1)
 		g.BoardState = boardState
+		if g.recorder != nil {
+			g.recorder.AddMove(x, y, color)
+		}
 		g.refreshHint()
 		// Spawn goroutine to avoid deadlock when called from main thread
 		go func() {
@@ -206,6 +212,9 @@ func (g *GoBoardUI) ConnectEngine(e engine.GameEngine) error {
 	e.OnGameEnd(func(outcome string) {
 		g.finished = true
 		g.BoardState = e.GetBoardState()
+		if g.recorder != nil {
+			g.recorder.SetResult(outcome)
+		}
 		g.ResetSelection()
 		g.refreshHint()
 		go func() {
@@ -249,12 +258,50 @@ func (g *GoBoardUI) Pass() {
 	g.eng.Pass()
 }
 
-// Close disconnects the engine.
+// Close disconnects the engine and finalizes any active recording.
 func (g *GoBoardUI) Close() {
+	if g.recorder != nil {
+		g.recorder.Close()
+		g.recorder = nil
+	}
 	if g.eng == nil {
 		return
 	}
 	g.eng.Close()
+}
+
+// SetRecorder sets the active SGF recorder.
+func (g *GoBoardUI) SetRecorder(rec *sgf.GameRecord) {
+	g.recorder = rec
+}
+
+// SetGameConfig stores the game configuration for mid-game recording toggle.
+func (g *GoBoardUI) SetGameConfig(gc engine.GameConfig) {
+	g.gameConfig = gc
+}
+
+// ToggleRecording toggles SGF recording on or off.
+// When toggling on mid-game, captures the current board position via AB[]/AW[].
+func (g *GoBoardUI) ToggleRecording(cfg *config.Config) {
+	if g.recorder != nil {
+		// Stop recording
+		g.recorder.Close()
+		g.recorder = nil
+	} else {
+		// Start recording
+		gc := g.gameConfig
+		rec, err := sgf.NewGameRecord(config.HistoryDir(), gc.BoardSize, gc.Komi, gc.PlayerColor, gc.EngineLevel)
+		if err != nil {
+			g.refreshHint()
+			return
+		}
+		// If game is in progress, snapshot current position
+		if g.BoardState != nil && g.BoardState.MoveNumber > 0 {
+			rec.AddSetupPosition(g.BoardState.Board)
+		}
+		g.recorder = rec
+	}
+	g.refreshHint()
 }
 
 func (g *GoBoardUI) SetConfig(c *config.Config) {
@@ -321,12 +368,18 @@ func (g *GoBoardUI) refreshHint() {
 		} else {
 			status = "[dimgray]◌[-] Thinking..."
 		}
-		controls = "[dimgray]hjkl[-] move  [dimgray]⏎[-] play  [dimgray]p[-] pass  [dimgray]f[-] focus  [dimgray]q[-] quit"
+		controls = "[dimgray]hjkl[-] move  [dimgray]⏎[-] play  [dimgray]p[-] pass  [dimgray]r[-] rec  [dimgray]f[-] focus  [dimgray]q[-] quit"
+	}
+
+	// Prepend REC indicator when recording
+	rec := ""
+	if g.recorder != nil {
+		rec = "[red]REC[-] "
 	}
 
 	// Build the horizontal bar: status left, controls right
 	// Calculate spacing to push controls to the right
-	statusLen := len(tview.TranslateANSI(status))
+	statusLen := len(tview.TranslateANSI(rec + status))
 	controlsLen := len(tview.TranslateANSI(controls))
 	padding := width - statusLen - controlsLen - 4 // 4 for margins
 	if padding < 2 {
@@ -338,7 +391,7 @@ func (g *GoBoardUI) refreshHint() {
 		spacer += " "
 	}
 
-	g.hint.SetText(fmt.Sprintf("  %s%s%s", status, spacer, controls))
+	g.hint.SetText(fmt.Sprintf("  %s%s%s%s", rec, status, spacer, controls))
 }
 
 // IsFinished returns true if the game is over.

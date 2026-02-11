@@ -18,6 +18,7 @@ import (
 	"termsuji-local/config"
 	"termsuji-local/engine"
 	"termsuji-local/engine/gtp"
+	"termsuji-local/sgf"
 	"termsuji-local/ui"
 )
 
@@ -155,6 +156,8 @@ func main() {
 				gameBoard.MoveSelection(1, 0)
 			case 'p':
 				gameBoard.Pass()
+			case 'r':
+				gameBoard.ToggleRecording(cfg)
 			case 'f':
 				if gameBoard.ToggleFocusMode() {
 					ui.BuildFocusLayout(gameFrame, gameBoard)
@@ -164,6 +167,11 @@ func main() {
 			}
 		}
 		return event
+	})
+
+	// History browser screen
+	historyBrowser := ui.NewHistoryBrowser(func() {
+		rootPage.SwitchToPage("setup")
 	})
 
 	// Game setup screen
@@ -176,6 +184,10 @@ func main() {
 		},
 		func() {
 			rootPage.SwitchToPage("colors")
+		},
+		func() {
+			historyBrowser.Refresh()
+			rootPage.SwitchToPage("history")
 		},
 	)
 
@@ -201,6 +213,7 @@ func main() {
 	rootPage.AddPage("setup", setupUI.Form(), true, !quickStart)
 	rootPage.AddPage("gameview", gameFrame, true, quickStart)
 	rootPage.AddPage("colors", colorConfig.Flex(), true, false)
+	rootPage.AddPage("history", historyBrowser.Flex(), true, false)
 
 	// Quick start if flags provided
 	if quickStart {
@@ -239,6 +252,16 @@ func startGame(gameCfg engine.GameConfig) {
 		rootPage.AddPage("error", modal, true, true)
 		return
 	}
+
+	// Set up SGF recording
+	gameBoard.SetGameConfig(gameCfg)
+	if cfg.EnableRecording {
+		rec, err := sgf.NewGameRecord(config.HistoryDir(), gameCfg.BoardSize, gameCfg.Komi, gameCfg.PlayerColor, gameCfg.EngineLevel)
+		if err == nil {
+			gameBoard.SetRecorder(rec)
+		}
+	}
+
 	rootPage.SwitchToPage("gameview")
 }
 
