@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.4.0] - 2026-02-11
+
+- added plan mode to control both black/white stones and preview next moves
+- can go back to live game or start playing from your new planned setup
+- can branch/preview variations while in plan mode
+
 ## [v0.3.0] - 2026-02-11
 
 - - games autosaved as sgf
